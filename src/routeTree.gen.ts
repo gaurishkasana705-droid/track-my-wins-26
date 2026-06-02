@@ -10,16 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutsRouteImport } from './routes/workouts'
+import { Route as TrackersRouteImport } from './routes/trackers'
 import { Route as StudyRouteImport } from './routes/study'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TrackersIdRouteImport } from './routes/trackers.$id'
 
 const WorkoutsRoute = WorkoutsRouteImport.update({
   id: '/workouts',
   path: '/workouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackersRoute = TrackersRouteImport.update({
+  id: '/trackers',
+  path: '/trackers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudyRoute = StudyRouteImport.update({
@@ -30,6 +39,16 @@ const StudyRoute = StudyRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -52,24 +71,37 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrackersIdRoute = TrackersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TrackersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
+  '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
+  '/trackers/$id': typeof TrackersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
+  '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
+  '/trackers/$id': typeof TrackersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,9 +109,13 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
+  '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
+  '/trackers/$id': typeof TrackersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -88,27 +124,39 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/goals'
     | '/login'
+    | '/profile'
+    | '/settings'
     | '/signup'
     | '/study'
+    | '/trackers'
     | '/workouts'
+    | '/trackers/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/goals'
     | '/login'
+    | '/profile'
+    | '/settings'
     | '/signup'
     | '/study'
+    | '/trackers'
     | '/workouts'
+    | '/trackers/$id'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/goals'
     | '/login'
+    | '/profile'
+    | '/settings'
     | '/signup'
     | '/study'
+    | '/trackers'
     | '/workouts'
+    | '/trackers/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -116,8 +164,11 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GoalsRoute: typeof GoalsRoute
   LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   StudyRoute: typeof StudyRoute
+  TrackersRoute: typeof TrackersRouteWithChildren
   WorkoutsRoute: typeof WorkoutsRoute
 }
 
@@ -128,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/workouts'
       fullPath: '/workouts'
       preLoaderRoute: typeof WorkoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trackers': {
+      id: '/trackers'
+      path: '/trackers'
+      fullPath: '/trackers'
+      preLoaderRoute: typeof TrackersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/study': {
@@ -142,6 +200,20 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -172,16 +244,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trackers/$id': {
+      id: '/trackers/$id'
+      path: '/$id'
+      fullPath: '/trackers/$id'
+      preLoaderRoute: typeof TrackersIdRouteImport
+      parentRoute: typeof TrackersRoute
+    }
   }
 }
+
+interface TrackersRouteChildren {
+  TrackersIdRoute: typeof TrackersIdRoute
+}
+
+const TrackersRouteChildren: TrackersRouteChildren = {
+  TrackersIdRoute: TrackersIdRoute,
+}
+
+const TrackersRouteWithChildren = TrackersRoute._addFileChildren(
+  TrackersRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   GoalsRoute: GoalsRoute,
   LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   StudyRoute: StudyRoute,
+  TrackersRoute: TrackersRouteWithChildren,
   WorkoutsRoute: WorkoutsRoute,
 }
 export const routeTree = rootRouteImport
