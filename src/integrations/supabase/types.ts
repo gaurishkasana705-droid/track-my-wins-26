@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      custom_tracker_entries: {
+        Row: {
+          created_at: string
+          entry_date: string
+          id: string
+          note: string | null
+          tracker_id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string | null
+          tracker_id: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string | null
+          tracker_id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_tracker_entries_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "custom_trackers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_trackers: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          target_value: number | null
+          tracker_type: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+          target_value?: number | null
+          tracker_type?: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          target_value?: number | null
+          tracker_type?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           completed: boolean
@@ -50,6 +127,36 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           created_at: string
@@ -77,6 +184,45 @@ export type Database = {
           session_date?: string
           subject?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          dashboard_layout: Json
+          font_family: string
+          font_scale: number
+          id: string
+          progress_style: string
+          theme: string
+          updated_at: string
+          user_id: string
+          widget_visibility: Json
+        }
+        Insert: {
+          created_at?: string
+          dashboard_layout?: Json
+          font_family?: string
+          font_scale?: number
+          id?: string
+          progress_style?: string
+          theme?: string
+          updated_at?: string
+          user_id: string
+          widget_visibility?: Json
+        }
+        Update: {
+          created_at?: string
+          dashboard_layout?: Json
+          font_family?: string
+          font_scale?: number
+          id?: string
+          progress_style?: string
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          widget_visibility?: Json
         }
         Relationships: []
       }
