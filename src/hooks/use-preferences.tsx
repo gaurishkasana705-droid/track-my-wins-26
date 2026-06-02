@@ -1,0 +1,118 @@
+import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+
+export type ProgressStyle = "ring" | "bar" | "card";
+export type FontFamily = "space-grotesk" | "inter" | "manrope" | "dm-sans";
+export type ThemeMode = "light" | "dark" | "system";
+
+export type Prefs = {
+  theme: ThemeMode;
+  font_family: FontFamily;
+  font_scale: number;
+  progress_style: ProgressStyle;
+  dashboard_layout: string[];
+  widget_visibility: Record<string, boolean>;
+};
+
+const DEFAULTS: Prefs = {
+  theme: "system",
+  font_family: "space-grotesk",
+  font_scale: 1,
+  progress_style: "ring",
+  dashboard_layout: ["stats", "chart", "goals", "streak"],
+  widget_visibility: { stats: true, chart: true, goals: true, streak: true, customTrackers: true },
+};
+
+const FONT_MAP: Record<FontFamily, { sans: string; display: string }> = {
+  "space-grotesk": { sans: "DM Sans", display: "Space Grotesk" },
+  "inter": { sans: "Inter", display: "Inter" },
+  "manrope": { sans: "Manrope", display: "Manrope" },
+  "dm-sans": { sans: "DM Sans", display: "DM Sans" },
+};
+
+type Ctx = {
+  prefs: Prefs;
+  setPrefs: (p: Partial<Prefs>) => Promise<void>;
+  loading: boolean;
+};
+
+const PrefCtx = createContext<Ctx>({ prefs: DEFAULTS, setPrefs: async () => {}, loading: true });
+
+function applyPrefs(p: Prefs) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  // theme
+  const dark = p.theme === "dark" || (p.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  root.classList.toggle("dark", dark);
+  // font
+  const f = FONT_MAP[p.font_family] ?? FONT_MAP["space-grotesk"];
+  root.style.setProperty("--app-font-sans", `"${f.sans}"`);
+  root.style.setProperty("--app-font-display", `"${f.display}"`);
+  // scale
+  root.style.setProperty("--app-font-scale", String(p.font_scale));
+}
+
+export function PreferencesProvider({ children }: { children: ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
+  const [prefs, setLocal] = useState<Prefs>(() => {
+    if (typeof window === "undefined") return DEFAULTS;
+    try {
+      const raw = localStorage.getItem("prefs");
+      if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULTS;
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { applyPrefs(prefs); }, [prefs]);
+
+  // Fetch from DB when user logs in
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { setLoading(false); return; }
+    (async () => {
+      const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
+      if (data) {
+        const merged: Prefs = {
+          theme: (data.theme as ThemeMode) ?? DEFAULTS.theme,
+          font_family: (data.font_family as FontFamily) ?? DEFAULTS.font_family,
+          font_scale: Number(data.font_scale) || 1,
+          progress_style: (data.progress_style as ProgressStyle) ?? DEFAULTS.progress_style,
+          dashboard_layout: (data.dashboard_layout as string[]) ?? DEFAULTS.dashboard_layout,
+          widget_visibility: (data.widget_visibility as Record<string, boolean>) ?? DEFAULTS.widget_visibility,
+        };
+        setLocal(merged);
+        localStorage.setItem("prefs", JSON.stringify(merged));
+      } else {
+        await supabase.from("user_preferences").insert({ user_id: user.id });
+      }
+      setLoading(false);
+    })();
+  }, [user, authLoading]);
+
+  // React to system theme change
+  useEffect(() => {
+    if (prefs.theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const fn = () => applyPrefs(prefs);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, [prefs]);
+
+  const setPrefs = useCallback(async (patch: Partial<Prefs>) => {
+    const next = { ...prefs, ...patch };
+    setLocal(next);
+    try { localStorage.setItem("prefs", JSON.stringify(next)); } catch {}
+    if (user) {
+      await supabase.from("user_preferences").upsert(
+        { user_id: user.id, ...next },
+        { onConflict: "user_id" }
+      );
+    }
+  }, [prefs, user]);
+
+  return <PrefCtx.Provider value={{ prefs, setPrefs, loading }}>{children}</PrefCtx.Provider>;
+}
+
+export const usePreferences = () => useContext(PrefCtx);
