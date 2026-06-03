@@ -1,16 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check } from "lucide-react";
+import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
+import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { usePreferences } from "@/hooks/use-preferences";
+import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } from "@/hooks/use-preferences";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
 import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from "recharts";
+import { computeInsights } from "@/lib/insights";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { WelcomeHero } from "@/components/welcome-hero";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — LifeTrack" }] }),
@@ -23,32 +32,79 @@ export const Route = createFileRoute("/dashboard")({
   ),
 });
 
-const STUDY_DAILY_TARGET = 120; // 2h
+const STUDY_DAILY_TARGET = 120;
 const WORKOUT_WEEKLY_TARGET = 5;
+
+const WIDGET_LABELS: Record<string, string> = {
+  welcome: "Welcome",
+  stats: "Summary stats",
+  chart: "7-day chart",
+  streak: "Streak",
+  goals: "Active goals",
+  discipline: "Discipline breakdown",
+};
+
+const SHAPE_OPTIONS: { value: WidgetShape; label: string }[] = [
+  { value: "rounded", label: "Rounded" },
+  { value: "rectangle", label: "Rectangle" },
+  { value: "square", label: "Square" },
+  { value: "circle", label: "Circle" },
+];
+const SIZE_OPTIONS: { value: WidgetSize; label: string }[] = [
+  { value: "sm", label: "Small" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Large" },
+];
+
+const SHAPE_CLASSES: Record<WidgetShape, string> = {
+  rounded: "rounded-3xl",
+  rectangle: "rounded-md",
+  square: "rounded-2xl",
+  circle: "rounded-full",
+};
+const SIZE_CLASSES: Record<WidgetSize, string> = {
+  sm: "col-span-6 sm:col-span-3 md:col-span-2",
+  md: "col-span-6 md:col-span-3",
+  lg: "col-span-6",
+};
+
+function defaultShape(key: string): WidgetShape {
+  if (key === "welcome") return "rounded";
+  return "rounded";
+}
+function defaultSize(key: string): WidgetSize {
+  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline") return "lg";
+  return "md";
+}
 
 function DashboardView() {
   const { user } = useAuth();
-  const { prefs } = usePreferences();
+  const { prefs, setPrefs } = usePreferences();
   const uid = user!.id;
-  const vis = prefs.widget_visibility;
+  const [editMode, setEditMode] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["dashboard", uid],
     queryFn: async () => {
-      const since7 = isoDate(daysAgo(6));
+      const since14 = isoDate(daysAgo(13));
       const since30 = isoDate(daysAgo(29));
       const today = isoDate(new Date());
+      const since7 = isoDate(daysAgo(6));
 
-      const [study, workouts, goals] = await Promise.all([
+      const [study, workouts, goals, trackers, entries] = await Promise.all([
         supabase.from("study_sessions").select("duration_minutes, subject, session_date").gte("session_date", since30),
         supabase.from("workouts").select("duration_minutes, workout_type, workout_date").gte("workout_date", since30),
         supabase.from("goals").select("id, title, progress, completed, deadline").order("created_at", { ascending: false }),
+        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
       ]);
 
       return {
         study: study.data ?? [],
         workouts: workouts.data ?? [],
         goals: goals.data ?? [],
+        trackers: trackers.data ?? [],
+        entries: entries.data ?? [],
         today, since7,
       };
     },
@@ -61,14 +117,11 @@ function DashboardView() {
   const todayStudy = study.filter((s) => s.session_date === data?.today).reduce((a, b) => a + b.duration_minutes, 0);
   const weekStudy = study.filter((s) => s.session_date >= (data?.since7 ?? "")).reduce((a, b) => a + b.duration_minutes, 0);
   const monthStudy = study.reduce((a, b) => a + b.duration_minutes, 0);
-
   const weekWorkouts = workouts.filter((w) => w.workout_date >= (data?.since7 ?? "")).length;
-
   const activeGoals = goals.filter((g) => !g.completed).length;
   const completedGoals = goals.filter((g) => g.completed).length;
   const avgProgress = goals.length ? Math.round(goals.reduce((a, b) => a + b.progress, 0) / goals.length) : 0;
 
-  // streak: consecutive days with any activity
   const allDates = new Set([...study.map((s) => s.session_date), ...workouts.map((w) => w.workout_date)]);
   let streak = 0;
   for (let i = 0; i < 30; i++) {
@@ -76,7 +129,7 @@ function DashboardView() {
     else if (i > 0) break;
   }
 
-  const chart = Array.from({ length: 7 }).map((_, i) => {
+  const chart = useMemo(() => Array.from({ length: 7 }).map((_, i) => {
     const d = isoDate(daysAgo(6 - i));
     const label = new Date(d).toLocaleDateString(undefined, { weekday: "short" });
     return {
@@ -84,193 +137,398 @@ function DashboardView() {
       study: study.filter((s) => s.session_date === d).reduce((a, b) => a + b.duration_minutes, 0) / 60,
       workout: workouts.filter((w) => w.workout_date === d).reduce((a, b) => a + b.duration_minutes, 0) / 60,
     };
-  });
+  }), [study, workouts]);
+
+  const insights = useMemo(() => computeInsights(
+    study.map((s) => ({ session_date: s.session_date, duration_minutes: s.duration_minutes })),
+    workouts.map((w) => ({ workout_date: w.workout_date, duration_minutes: w.duration_minutes })),
+    data?.trackers ?? [],
+    data?.entries ?? [],
+  ), [study, workouts, data?.trackers, data?.entries]);
+
+  // Visible widgets in saved order; missing keys fall back to defaults.
+  const layout = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const k of prefs.dashboard_layout) {
+      if (prefs.widget_visibility[k] !== false && !seen.has(k) && WIDGET_LABELS[k]) {
+        out.push(k); seen.add(k);
+      }
+    }
+    for (const k of DEFAULT_LAYOUT) {
+      if (!seen.has(k) && prefs.widget_visibility[k] !== false) {
+        out.push(k); seen.add(k);
+      }
+    }
+    return out;
+  }, [prefs.dashboard_layout, prefs.widget_visibility]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  const onDragEnd = (e: DragEndEvent) => {
+    if (!e.over || e.active.id === e.over.id) return;
+    const oldIdx = layout.indexOf(String(e.active.id));
+    const newIdx = layout.indexOf(String(e.over.id));
+    if (oldIdx < 0 || newIdx < 0) return;
+    const next = arrayMove(layout, oldIdx, newIdx);
+    // merge with hidden widgets at the end so they're preserved
+    const hidden = prefs.dashboard_layout.filter((k) => !next.includes(k));
+    setPrefs({ dashboard_layout: [...next, ...hidden] });
+  };
+
+  const move = (key: string, dir: -1 | 1) => {
+    const idx = layout.indexOf(key);
+    const to = idx + dir;
+    if (idx < 0 || to < 0 || to >= layout.length) return;
+    const next = arrayMove(layout, idx, to);
+    const hidden = prefs.dashboard_layout.filter((k) => !next.includes(k));
+    setPrefs({ dashboard_layout: [...next, ...hidden] });
+  };
+
+  const setShape = (key: string, shape: WidgetShape) =>
+    setPrefs({ widget_shapes: { ...prefs.widget_shapes, [key]: shape } });
+  const setSize = (key: string, size: WidgetSize) =>
+    setPrefs({ widget_sizes: { ...prefs.widget_sizes, [key]: size } });
+  const hide = (key: string) =>
+    setPrefs({ widget_visibility: { ...prefs.widget_visibility, [key]: false } });
+
+  const resetLayout = () => {
+    setPrefs({
+      dashboard_layout: DEFAULT_LAYOUT,
+      widget_shapes: {},
+      widget_sizes: {},
+      widget_visibility: { welcome: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+    });
+    toast.success("Layout reset to default");
+  };
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div>
-        <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
-        <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Welcome back<span className="text-gradient">.</span>
-        </h2>
+    <div className="space-y-5 animate-fade-up">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your day</p>
+          <h2 className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {editMode && (
+            <Button variant="ghost" size="sm" onClick={resetLayout}><RotateCcw className="mr-1.5 h-4 w-4" />Reset</Button>
+          )}
+          <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode((v) => !v)}>
+            {editMode ? <><Check className="mr-1.5 h-4 w-4" />Done</> : <><Pencil className="mr-1.5 h-4 w-4" />Edit layout</>}
+          </Button>
+        </div>
       </div>
 
-      {vis.stats !== false && <StatsRow
-        style={prefs.progress_style}
-        studyToday={todayStudy}
-        studyTarget={STUDY_DAILY_TARGET}
-        weekWorkouts={weekWorkouts}
-        workoutTarget={WORKOUT_WEEKLY_TARGET}
-        avgGoal={avgProgress}
-        activeGoals={activeGoals}
-        completedGoals={completedGoals}
-        weekStudy={weekStudy}
-      />}
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        {vis.chart !== false && (
-          <Card className="lg:col-span-2 overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="h-4 w-4 text-primary" />Last 7 days</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chart}>
-                  <defs>
-                    <linearGradient id="studyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="oklch(0.62 0.19 258)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="oklch(0.72 0.17 250)" stopOpacity={0.6} />
-                    </linearGradient>
-                    <linearGradient id="workoutGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="oklch(0.68 0.17 155)" stopOpacity={1} />
-                      <stop offset="100%" stopColor="oklch(0.78 0.15 150)" stopOpacity={0.6} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="day" stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} className="text-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }}
-                    formatter={(v: number) => `${v.toFixed(1)}h`}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={layout} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-6 gap-4">
+            {layout.map((key) => {
+              const shape = prefs.widget_shapes[key] ?? defaultShape(key);
+              const size = prefs.widget_sizes[key] ?? defaultSize(key);
+              return (
+                <SortableWidget
+                  key={key}
+                  id={key}
+                  shape={shape}
+                  size={size}
+                  editMode={editMode}
+                  onMoveUp={() => move(key, -1)}
+                  onMoveDown={() => move(key, 1)}
+                  onShape={(s) => setShape(key, s)}
+                  onSize={(s) => setSize(key, s)}
+                  onHide={() => hide(key)}
+                >
+                  <RenderWidget
+                    widget={key}
+                    shape={shape}
+                    streak={streak}
+                    studyToday={todayStudy}
+                    weekStudy={weekStudy}
+                    monthStudy={monthStudy}
+                    weekWorkouts={weekWorkouts}
+                    workoutsTotal={workouts.length}
+                    activeGoals={activeGoals}
+                    completedGoals={completedGoals}
+                    avgProgress={avgProgress}
+                    goals={goals}
+                    chart={chart}
+                    insights={insights}
                   />
-                  <Bar dataKey="study" fill="url(#studyGrad)" radius={[8, 8, 0, 0]} name="Study" />
-                  <Bar dataKey="workout" fill="url(#workoutGrad)" radius={[8, 8, 0, 0]} name="Workout" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
+                </SortableWidget>
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
 
-        {vis.streak !== false && (
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Flame className="h-4 w-4 text-warning" />Streak & summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-2xl bg-gradient-primary p-5 text-primary-foreground shadow-glow">
-                <p className="text-xs uppercase tracking-wider opacity-80">Current streak</p>
-                <p className="mt-1 font-display text-4xl font-bold">{streak}<span className="text-xl opacity-80"> days</span></p>
-                <div className="mt-3 flex gap-0.5">
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <div key={i} className={`h-2 flex-1 rounded-sm ${i < streak ? "bg-primary-foreground/90" : "bg-primary-foreground/20"}`} />
-                  ))}
-                </div>
-              </div>
-              <SummaryRow label="Study (30d)" value={formatMinutes(monthStudy)} />
-              <SummaryRow label="Workouts (30d)" value={String(workouts.length)} />
-              <SummaryRow label="Completed goals" value={`${completedGoals}/${goals.length}`} />
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {vis.goals !== false && goals.filter((g) => !g.completed).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" />Active goals</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {goals.filter((g) => !g.completed).slice(0, 4).map((g) => (
-              <div key={g.id}>
-                <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span className="font-medium">{g.title}</span>
-                  <span className="text-muted-foreground tabular-nums">{g.progress}%</span>
-                </div>
-                <Progress value={g.progress} className="h-2.5" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {editMode && (
+        <div className="rounded-2xl border bg-secondary/30 p-4 text-center text-xs text-muted-foreground">
+          Drag widgets to reorder. Use the menu to change shape, size, or hide. Toggle widgets back in Settings.
+        </div>
       )}
     </div>
   );
 }
 
-function StatsRow({
-  style, studyToday, studyTarget, weekWorkouts, workoutTarget, avgGoal,
-  activeGoals, completedGoals, weekStudy,
+// ───────────── Sortable wrapper ─────────────
+
+function SortableWidget({
+  id, shape, size, editMode, children,
+  onMoveUp, onMoveDown, onShape, onSize, onHide,
 }: {
-  style: "ring" | "bar" | "card";
-  studyToday: number; studyTarget: number;
-  weekWorkouts: number; workoutTarget: number;
-  avgGoal: number; activeGoals: number; completedGoals: number; weekStudy: number;
+  id: string; shape: WidgetShape; size: WidgetSize; editMode: boolean;
+  children: React.ReactNode;
+  onMoveUp: () => void; onMoveDown: () => void;
+  onShape: (s: WidgetShape) => void; onSize: (s: WidgetSize) => void; onHide: () => void;
 }) {
-  if (style === "ring") {
-    return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        <RingCard icon={BookOpen} label="Study today" value={studyToday} max={studyTarget} display={formatMinutes(studyToday)} sub={`of ${formatMinutes(studyTarget)}`} />
-        <RingCard icon={Dumbbell} label="Workouts (week)" value={weekWorkouts} max={workoutTarget} display={`${weekWorkouts}/${workoutTarget}`} sub="this week" />
-        <RingCard icon={Target} label="Avg. goal progress" value={avgGoal} max={100} display={`${avgGoal}%`} sub={`${completedGoals} done`} />
-      </div>
-    );
-  }
-  if (style === "bar") {
-    return (
-      <div className="grid gap-4 sm:grid-cols-3">
-        <BarCard icon={BookOpen} label="Study today" value={studyToday} max={studyTarget} display={formatMinutes(studyToday)} />
-        <BarCard icon={Dumbbell} label="Workouts (week)" value={weekWorkouts} max={workoutTarget} display={`${weekWorkouts}/${workoutTarget}`} />
-        <BarCard icon={Target} label="Avg. goal progress" value={avgGoal} max={100} display={`${avgGoal}%`} />
-      </div>
-    );
-  }
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !editMode });
+  const round = shape === "circle" || shape === "square";
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <SimpleCard icon={BookOpen} label="Study today" value={formatMinutes(studyToday)} hint={`${formatMinutes(weekStudy)} / week`} />
-      <SimpleCard icon={Dumbbell} label="Workouts week" value={String(weekWorkouts)} hint={`target ${workoutTarget}`} />
-      <SimpleCard icon={Target} label="Active goals" value={String(activeGoals)} hint={`${completedGoals} done`} />
-      <SimpleCard icon={Flame} label="Avg progress" value={`${avgGoal}%`} hint="All goals" />
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        SIZE_CLASSES[size],
+        "min-w-0",
+        isDragging && "z-10 opacity-80",
+      )}
+    >
+      <div
+        className={cn(
+          "group relative h-full overflow-hidden border bg-card text-card-foreground shadow-card transition-all",
+          SHAPE_CLASSES[shape],
+          round && "aspect-square",
+          !editMode && "hover:shadow-elegant",
+          editMode && "ring-2 ring-primary/30",
+        )}
+      >
+        {editMode && (
+          <div className="absolute right-2 top-2 z-20 flex items-center gap-1">
+            <button
+              {...attributes}
+              {...listeners}
+              aria-label="Drag"
+              className="grid h-7 w-7 cursor-grab place-items-center rounded-md bg-background/80 text-muted-foreground shadow-card hover:text-foreground active:cursor-grabbing"
+            >
+              <GripVertical className="h-3.5 w-3.5" />
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button aria-label="Widget options" className="grid h-7 w-7 place-items-center rounded-md bg-background/80 text-muted-foreground shadow-card hover:text-foreground">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="text-xs">Move</DropdownMenuLabel>
+                <DropdownMenuItem onClick={onMoveUp}>Move up</DropdownMenuItem>
+                <DropdownMenuItem onClick={onMoveDown}>Move down</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs">Shape</DropdownMenuLabel>
+                {SHAPE_OPTIONS.map((s) => (
+                  <DropdownMenuItem key={s.value} onClick={() => onShape(s.value)}>
+                    {s.label}{shape === s.value && " ✓"}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs">Size</DropdownMenuLabel>
+                {SIZE_OPTIONS.map((s) => (
+                  <DropdownMenuItem key={s.value} onClick={() => onSize(s.value)}>
+                    {s.label}{size === s.value && " ✓"}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onHide} className="text-destructive">Hide widget</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        <div className={cn("h-full w-full", round ? "grid place-items-center p-4 text-center" : "p-5")}>
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
 
-function RingCard({ icon: Icon, label, value, max, display, sub }: { icon: React.ElementType; label: string; value: number; max: number; display: string; sub: string }) {
-  return (
-    <Card className="hover-lift">
-      <CardContent className="flex flex-col items-center gap-3 pt-6">
-        <div className="flex w-full items-center justify-between">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-secondary text-primary"><Icon className="h-4 w-4" /></div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+// ───────────── Widget bodies ─────────────
+
+type RenderProps = {
+  widget: string;
+  shape: WidgetShape;
+  streak: number;
+  studyToday: number; weekStudy: number; monthStudy: number;
+  weekWorkouts: number; workoutsTotal: number;
+  activeGoals: number; completedGoals: number; avgProgress: number;
+  goals: Array<{ id: string; title: string; progress: number; completed: boolean }>;
+  chart: Array<{ day: string; study: number; workout: number }>;
+  insights: ReturnType<typeof computeInsights>;
+};
+
+function RenderWidget(p: RenderProps) {
+  const compact = p.shape === "circle" || p.shape === "square";
+  switch (p.widget) {
+    case "welcome":
+      return (
+        <div className="-m-5">
+          <WelcomeHero
+            streak={p.streak}
+            disciplineScore={p.insights.disciplineScore}
+            disciplineDelta={p.insights.disciplineDelta}
+            insight={p.insights.insights[0] ?? "Steady steps. Make today count."}
+            consistencyScore={p.insights.consistencyScore}
+          />
         </div>
-        <StatRing value={value} max={max} size={140} label={display} sub={sub} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function BarCard({ icon: Icon, label, value, max, display }: { icon: React.ElementType; label: string; value: number; max: number; display: string }) {
-  const pct = Math.min(100, Math.round((value / max) * 100));
-  return (
-    <Card className="hover-lift">
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow"><Icon className="h-4 w-4" /></div>
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
+      );
+    case "stats":
+      if (compact) return (
+        <StatRing value={p.studyToday} max={STUDY_DAILY_TARGET} size={140} label={formatMinutes(p.studyToday)} sub="study today" />
+      );
+      return (
+        <div>
+          <Header icon={Sparkles} label="Today" />
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <MiniStat icon={BookOpen} value={formatMinutes(p.studyToday)} label="Study" />
+            <MiniStat icon={Dumbbell} value={`${p.weekWorkouts}`} label="Workouts wk" />
+            <MiniStat icon={Target} value={`${p.avgProgress}%`} label="Goal avg" />
+          </div>
         </div>
-        <p className="mt-4 font-display text-3xl font-bold">{display}</p>
-        <Progress value={pct} className="mt-3 h-2.5" />
-        <p className="mt-1.5 text-xs text-muted-foreground">{pct}% of target</p>
-      </CardContent>
-    </Card>
-  );
+      );
+    case "chart":
+      if (compact) return (
+        <StatRing value={p.weekStudy} max={STUDY_DAILY_TARGET * 7} size={140} label={`${Math.round(p.weekStudy / 60)}h`} sub="this week" />
+      );
+      return (
+        <div className="h-full">
+          <Header icon={CalendarDays} label="Last 7 days" />
+          <div className="mt-3 h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={p.chart}>
+                <defs>
+                  <linearGradient id="dStudy" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="oklch(0.62 0.19 258)" />
+                    <stop offset="100%" stopColor="oklch(0.72 0.17 250)" stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="dWk" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="oklch(0.68 0.17 155)" />
+                    <stop offset="100%" stopColor="oklch(0.78 0.15 150)" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="day" stroke="currentColor" fontSize={11} tickLine={false} axisLine={false} className="text-muted-foreground" />
+                <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${v.toFixed(1)}h`} />
+                <Bar dataKey="study" fill="url(#dStudy)" radius={[6, 6, 0, 0]} name="Study" />
+                <Bar dataKey="workout" fill="url(#dWk)" radius={[6, 6, 0, 0]} name="Workout" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      );
+    case "streak":
+      if (compact) return (
+        <div className="grid place-items-center">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow"><Flame className="h-6 w-6" /></div>
+          <p className="mt-2 font-display text-3xl font-bold">{p.streak}</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">day streak</p>
+        </div>
+      );
+      return (
+        <div>
+          <Header icon={Flame} label="Streak & summary" iconClass="text-warning" />
+          <div className="mt-4 rounded-2xl bg-gradient-primary p-4 text-primary-foreground shadow-glow">
+            <p className="text-xs uppercase tracking-wider opacity-80">Current streak</p>
+            <p className="mt-1 font-display text-3xl font-bold">{p.streak}<span className="text-base opacity-80"> days</span></p>
+            <div className="mt-3 flex gap-0.5">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <div key={i} className={`h-1.5 flex-1 rounded-sm ${i < p.streak ? "bg-primary-foreground/90" : "bg-primary-foreground/20"}`} />
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 space-y-2 text-sm">
+            <Row label="Study (30d)" value={formatMinutes(p.monthStudy)} />
+            <Row label="Workouts (30d)" value={String(p.workoutsTotal)} />
+            <Row label="Goals done" value={`${p.completedGoals}`} />
+          </div>
+        </div>
+      );
+    case "goals":
+      if (compact) return (
+        <StatRing value={p.avgProgress} max={100} size={140} label={`${p.avgProgress}%`} sub="goal avg" />
+      );
+      return (
+        <div>
+          <Header icon={Target} label="Active goals" />
+          <div className="mt-4 space-y-3">
+            {p.goals.filter((g) => !g.completed).slice(0, 4).map((g) => (
+              <div key={g.id}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="truncate font-medium">{g.title}</span>
+                  <span className="tabular-nums text-muted-foreground">{g.progress}%</span>
+                </div>
+                <Progress value={g.progress} className="h-2" />
+              </div>
+            ))}
+            {p.goals.filter((g) => !g.completed).length === 0 && (
+              <p className="py-4 text-center text-sm text-muted-foreground">No active goals. Add one to get going.</p>
+            )}
+          </div>
+        </div>
+      );
+    case "discipline": {
+      const b = p.insights.breakdown;
+      if (compact) return (
+        <StatRing value={p.insights.disciplineScore} max={100} size={140} label={`${p.insights.disciplineScore}`} sub="discipline" />
+      );
+      return (
+        <div>
+          <Header icon={Activity} label="Discipline breakdown" />
+          <div className="mt-3 flex items-center gap-5">
+            <StatRing value={p.insights.disciplineScore} max={100} size={104} stroke={9} label={`${p.insights.disciplineScore}`} sub="score" />
+            <div className="flex-1 space-y-2">
+              <BreakRow label="Study consistency" value={b.study} weight={b.weights.study} />
+              <BreakRow label="Workout consistency" value={b.workout} weight={b.weights.workout} />
+              <BreakRow label="Habit completion" value={b.habit} weight={b.weights.habit} />
+              <BreakRow label="Volume vs target" value={b.volume} weight={b.weights.volume} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    default:
+      return null;
+  }
 }
 
-function SimpleCard({ icon: Icon, label, value, hint }: { icon: React.ElementType; label: string; value: string; hint: string }) {
+function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React.ElementType; label: string; iconClass?: string }) {
   return (
-    <Card className="hover-lift">
-      <CardContent className="pt-6">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow"><Icon className="h-4 w-4" /></div>
-        <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 font-display text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </CardContent>
-    </Card>
+    <div className="flex items-center gap-2 text-sm font-semibold">
+      <Icon className={cn("h-4 w-4", iconClass)} /> {label}
+    </div>
   );
 }
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between text-sm"><span className="text-muted-foreground">{label}</span><span className="font-medium tabular-nums">{value}</span></div>;
+}
+function MiniStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium tabular-nums">{value}</span>
+    <div className="rounded-xl border bg-secondary/40 p-3">
+      <div className="grid h-7 w-7 place-items-center rounded-lg bg-card text-primary"><Icon className="h-3.5 w-3.5" /></div>
+      <p className="mt-2 font-display text-lg font-bold">{value}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+function BreakRow({ label, value, weight }: { label: string; value: number; weight: number }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium">{label}</span>
+        <span className="tabular-nums text-muted-foreground">{value}% · {weight}wt</span>
+      </div>
+      <Progress value={value} className="mt-1 h-1.5" />
     </div>
   );
 }
