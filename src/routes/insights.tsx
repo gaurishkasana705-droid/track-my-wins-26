@@ -94,6 +94,50 @@ function InsightsView() {
         </Card>
       </div>
 
+      {/* Discipline breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">What goes into your discipline score</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[
+            { label: "Study consistency", value: data.breakdown.study, weight: data.breakdown.weights.study, hint: "Days you studied this week" },
+            { label: "Workout consistency", value: data.breakdown.workout, weight: data.breakdown.weights.workout, hint: "Days you trained (target 4/wk)" },
+            { label: "Habit completion", value: data.breakdown.habit, weight: data.breakdown.weights.habit, hint: "Custom trackers hit vs target" },
+            { label: "Volume vs target", value: data.breakdown.volume, weight: data.breakdown.weights.volume, hint: "Total study minutes and workouts" },
+          ].map((r) => (
+            <div key={r.label} className="rounded-xl border bg-secondary/30 p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{r.label}</span>
+                <span className="tabular-nums text-muted-foreground">{r.value}% · weight {r.weight}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">{r.hint}</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full rounded-full bg-gradient-primary transition-all" style={{ width: `${r.value}%` }} />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Productivity patterns */}
+      {data.patterns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><Activity className="h-4 w-4 text-primary" />Productivity patterns</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2.5">
+            {data.patterns.map((p, i) => (
+              <div key={i} className="flex gap-3 rounded-xl border bg-card p-3 text-sm leading-relaxed">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-secondary text-primary text-[10px] font-bold">{i + 1}</span>
+                {p}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Reality check */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="hover-lift">
