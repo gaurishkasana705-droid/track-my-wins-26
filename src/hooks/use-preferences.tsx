@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/use-auth";
 export type ProgressStyle = "ring" | "bar" | "card";
 export type FontFamily = "space-grotesk" | "inter" | "manrope" | "dm-sans";
 export type ThemeMode = "light" | "dark" | "system";
+export type WidgetShape = "rounded" | "rectangle" | "square" | "circle";
+export type WidgetSize = "sm" | "md" | "lg";
 
 export type Prefs = {
   theme: ThemeMode;
@@ -13,15 +15,21 @@ export type Prefs = {
   progress_style: ProgressStyle;
   dashboard_layout: string[];
   widget_visibility: Record<string, boolean>;
+  widget_shapes: Record<string, WidgetShape>;
+  widget_sizes: Record<string, WidgetSize>;
 };
+
+export const DEFAULT_LAYOUT = ["welcome", "stats", "chart", "streak", "goals", "discipline"];
 
 const DEFAULTS: Prefs = {
   theme: "system",
   font_family: "space-grotesk",
   font_scale: 1,
   progress_style: "ring",
-  dashboard_layout: ["stats", "chart", "goals", "streak"],
-  widget_visibility: { stats: true, chart: true, goals: true, streak: true, customTrackers: true },
+  dashboard_layout: DEFAULT_LAYOUT,
+  widget_visibility: { welcome: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+  widget_shapes: {},
+  widget_sizes: {},
 };
 
 const FONT_MAP: Record<FontFamily, { sans: string; display: string }> = {
@@ -42,14 +50,11 @@ const PrefCtx = createContext<Ctx>({ prefs: DEFAULTS, setPrefs: async () => {}, 
 function applyPrefs(p: Prefs) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  // theme
   const dark = p.theme === "dark" || (p.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   root.classList.toggle("dark", dark);
-  // font
   const f = FONT_MAP[p.font_family] ?? FONT_MAP["space-grotesk"];
   root.style.setProperty("--app-font-sans", `"${f.sans}"`);
   root.style.setProperty("--app-font-display", `"${f.display}"`);
-  // scale
   root.style.setProperty("--app-font-scale", String(p.font_scale));
 }
 
@@ -67,20 +72,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { applyPrefs(prefs); }, [prefs]);
 
-  // Fetch from DB when user logs in
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
     (async () => {
       const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
+        const layout = (data.dashboard_layout as string[]) ?? DEFAULTS.dashboard_layout;
+        // Merge in any newly-added default widgets the user hasn't seen yet
+        const merged_layout = [...layout];
+        for (const k of DEFAULT_LAYOUT) if (!merged_layout.includes(k)) merged_layout.push(k);
         const merged: Prefs = {
           theme: (data.theme as ThemeMode) ?? DEFAULTS.theme,
           font_family: (data.font_family as FontFamily) ?? DEFAULTS.font_family,
           font_scale: Number(data.font_scale) || 1,
           progress_style: (data.progress_style as ProgressStyle) ?? DEFAULTS.progress_style,
-          dashboard_layout: (data.dashboard_layout as string[]) ?? DEFAULTS.dashboard_layout,
-          widget_visibility: (data.widget_visibility as Record<string, boolean>) ?? DEFAULTS.widget_visibility,
+          dashboard_layout: merged_layout,
+          widget_visibility: { ...DEFAULTS.widget_visibility, ...((data.widget_visibility as Record<string, boolean>) ?? {}) },
+          widget_shapes: (data.widget_shapes as Record<string, WidgetShape>) ?? {},
+          widget_sizes: (data.widget_sizes as Record<string, WidgetSize>) ?? {},
         };
         setLocal(merged);
         localStorage.setItem("prefs", JSON.stringify(merged));
@@ -91,7 +101,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     })();
   }, [user, authLoading]);
 
-  // React to system theme change
   useEffect(() => {
     if (prefs.theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
