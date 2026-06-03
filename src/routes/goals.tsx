@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { SwipeRow } from "@/components/swipe-row";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -64,6 +65,7 @@ function GoalsView() {
     refresh();
   };
 
+  const [editingId, setEditingId] = useState<string | null>(null);
   const active = goals.filter((g) => !g.completed);
   const done = goals.filter((g) => g.completed);
 
@@ -91,44 +93,49 @@ function GoalsView() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {goals.map((g) => (
-            <Card key={g.id} className={cn("transition-all hover:shadow-elegant", g.completed && "opacity-60")}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <CardTitle className={cn("text-base", g.completed && "line-through")}>{g.title}</CardTitle>
-                  <div className="flex shrink-0 gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => toggleComplete(g.id, g.completed)} aria-label="Toggle complete">
-                      <Check className={cn("h-4 w-4", g.completed ? "text-success" : "text-muted-foreground")} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => remove(g.id)} aria-label="Delete">
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+        <>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Swipe right to complete · left to remove · long-press to edit</p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {goals.map((g) => {
+              const isEditing = editingId === g.id;
+              return (
+                <SwipeRow
+                  key={g.id}
+                  className={cn("border shadow-sm", g.completed && "opacity-60")}
+                  disabled={isEditing}
+                  onComplete={g.completed ? undefined : () => toggleComplete(g.id, g.completed)}
+                  onSkip={() => remove(g.id)}
+                  onEdit={() => setEditingId(isEditing ? null : g.id)}
+                >
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className={cn("truncate font-semibold", g.completed && "line-through text-muted-foreground")}>{g.title}</p>
+                        {g.description && <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{g.description}</p>}
+                      </div>
+                      <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">{g.progress}%</span>
+                    </div>
+                    <Progress value={g.progress} className="mt-3 h-2" />
+                    {isEditing && !g.completed && (
+                      <div className="mt-4 space-y-2">
+                        <Slider value={[g.progress]} max={100} step={5} onValueChange={(v) => updateProgress(g.id, v[0])} />
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Done</Button>
+                        </div>
+                      </div>
+                    )}
+                    {g.deadline && !isEditing && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        Due {new Date(g.deadline).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
-                </div>
-                {g.description && <p className="text-sm text-muted-foreground">{g.description}</p>}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{g.progress}%</span>
-                  </div>
-                  <Progress value={g.progress} />
-                </div>
-                {!g.completed && (
-                  <Slider value={[g.progress]} max={100} step={5} onValueChange={(v) => updateProgress(g.id, v[0])} />
-                )}
-                {g.deadline && (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    Due {new Date(g.deadline).toLocaleDateString()}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </SwipeRow>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
