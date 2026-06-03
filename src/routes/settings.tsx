@@ -23,10 +23,12 @@ export const Route = createFileRoute("/settings")({
 });
 
 const WIDGETS = [
+  { key: "welcome", label: "Welcome hero" },
   { key: "stats", label: "Summary stats" },
   { key: "chart", label: "7-day chart" },
   { key: "streak", label: "Streak panel" },
   { key: "goals", label: "Active goals" },
+  { key: "discipline", label: "Discipline breakdown" },
   { key: "customTrackers", label: "Custom trackers" },
 ];
 
