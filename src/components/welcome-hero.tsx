@@ -25,7 +25,7 @@ export function WelcomeHero({
   const trendCls = disciplineDelta > 0 ? "text-success" : disciplineDelta < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
-    <div className="relative col-span-6 overflow-hidden rounded-3xl border bg-gradient-aurora p-6 text-primary-foreground shadow-elegant animate-fade-up sm:p-8">
+    <div className="relative w-full overflow-hidden rounded-3xl bg-gradient-aurora p-6 text-primary-foreground sm:p-8">
       {/* Decorative blobs */}
       <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
       <div className="pointer-events-none absolute -left-10 -bottom-20 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
