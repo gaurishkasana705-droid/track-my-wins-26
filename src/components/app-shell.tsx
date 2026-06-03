@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Menu, X, Settings, User, ListChecks } from "lucide-react";
+import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Menu, X, Settings, User, ListChecks, Activity } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +7,19 @@ import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/insights", label: "Insights", icon: Activity },
   { to: "/study", label: "Study", icon: BookOpen },
   { to: "/workouts", label: "Workouts", icon: Dumbbell },
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/trackers", label: "Trackers", icon: ListChecks },
+] as const;
+
+const MOBILE_NAV = [
+  { to: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { to: "/insights", label: "Insights", icon: Activity },
+  { to: "/study", label: "Study", icon: BookOpen },
+  { to: "/goals", label: "Goals", icon: Target },
+  { to: "/workouts", label: "Workouts", icon: Dumbbell },
 ] as const;
 
 const SECONDARY_NAV = [
@@ -61,7 +70,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
 
         {/* Mobile bottom nav */}
         <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 gap-1 border-t bg-background/85 px-2 py-1.5 backdrop-blur-lg md:hidden">
-          {PRIMARY_NAV.map(({ to, label, icon: Icon }) => {
+          {MOBILE_NAV.map(({ to, label, icon: Icon }) => {
             const active = path === to || path.startsWith(to + "/");
             return (
               <Link

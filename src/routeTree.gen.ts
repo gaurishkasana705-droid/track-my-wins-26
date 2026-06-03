@@ -16,6 +16,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -56,6 +57,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoalsRoute = GoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
+  '/insights': typeof InsightsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/goals'
+    | '/insights'
     | '/login'
     | '/profile'
     | '/settings'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/goals'
+    | '/insights'
     | '/login'
     | '/profile'
     | '/settings'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/goals'
+    | '/insights'
     | '/login'
     | '/profile'
     | '/settings'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   GoalsRoute: typeof GoalsRoute
+  InsightsRoute: typeof InsightsRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
@@ -223,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/goals': {
       id: '/goals'
       path: '/goals'
@@ -270,6 +290,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   GoalsRoute: GoalsRoute,
+  InsightsRoute: InsightsRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
@@ -281,13 +302,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
