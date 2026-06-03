@@ -198,6 +198,8 @@ export type Database = {
           theme: string
           updated_at: string
           user_id: string
+          widget_shapes: Json
+          widget_sizes: Json
           widget_visibility: Json
         }
         Insert: {
@@ -210,6 +212,8 @@ export type Database = {
           theme?: string
           updated_at?: string
           user_id: string
+          widget_shapes?: Json
+          widget_sizes?: Json
           widget_visibility?: Json
         }
         Update: {
@@ -222,6 +226,8 @@ export type Database = {
           theme?: string
           updated_at?: string
           user_id?: string
+          widget_shapes?: Json
+          widget_sizes?: Json
           widget_visibility?: Json
         }
         Relationships: []
