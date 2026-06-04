@@ -19,7 +19,7 @@ export type Prefs = {
   widget_sizes: Record<string, WidgetSize>;
 };
 
-export const DEFAULT_LAYOUT = ["welcome", "stats", "chart", "streak", "goals", "discipline"];
+export const DEFAULT_LAYOUT = ["welcome", "todayFocus", "todayInsight", "stats", "chart", "streak", "goals", "discipline"];
 
 const DEFAULTS: Prefs = {
   theme: "system",
@@ -27,7 +27,7 @@ const DEFAULTS: Prefs = {
   font_scale: 1,
   progress_style: "ring",
   dashboard_layout: DEFAULT_LAYOUT,
-  widget_visibility: { welcome: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+  widget_visibility: { welcome: true, todayFocus: true, todayInsight: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
   widget_shapes: {},
   widget_sizes: {},
 };

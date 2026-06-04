@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check } from "lucide-react";
+import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight } from "lucide-react";
 import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -12,6 +12,7 @@ import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } fro
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
+import { CountUp } from "@/components/count-up";
 import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { computeInsights } from "@/lib/insights";
@@ -37,6 +38,8 @@ const WORKOUT_WEEKLY_TARGET = 5;
 
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
+  todayFocus: "Today's focus",
+  todayInsight: "Today's insight",
   stats: "Summary stats",
   chart: "7-day chart",
   streak: "Streak",
@@ -68,12 +71,12 @@ const SIZE_CLASSES: Record<WidgetSize, string> = {
   lg: "col-span-6",
 };
 
-function defaultShape(key: string): WidgetShape {
-  if (key === "welcome") return "rounded";
+function defaultShape(_key: string): WidgetShape {
   return "rounded";
 }
 function defaultSize(key: string): WidgetSize {
-  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline") return "lg";
+  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
+  if (key === "todayInsight") return "lg";
   return "md";
 }
 
@@ -200,7 +203,7 @@ function DashboardView() {
       dashboard_layout: DEFAULT_LAYOUT,
       widget_shapes: {},
       widget_sizes: {},
-      widget_visibility: { welcome: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+      widget_visibility: { welcome: true, todayFocus: true, todayInsight: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
     });
     toast.success("Layout reset to default");
   };
@@ -363,7 +366,7 @@ type RenderProps = {
   studyToday: number; weekStudy: number; monthStudy: number;
   weekWorkouts: number; workoutsTotal: number;
   activeGoals: number; completedGoals: number; avgProgress: number;
-  goals: Array<{ id: string; title: string; progress: number; completed: boolean }>;
+  goals: Array<{ id: string; title: string; progress: number; completed: boolean; deadline?: string | null }>;
   chart: Array<{ day: string; study: number; workout: number }>;
   insights: ReturnType<typeof computeInsights>;
 };
@@ -383,6 +386,54 @@ function RenderWidget(p: RenderProps) {
           />
         </div>
       );
+    case "todayFocus": {
+      const active = p.goals.filter((g) => !g.completed);
+      const withDeadline = active.filter((g) => g.deadline).sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1));
+      const focus = withDeadline[0] ?? active[0];
+      if (!focus) {
+        return (
+          <Link to="/goals" className="block h-full">
+            <Header icon={Target} label="Today's focus" />
+            <div className="mt-4 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-8 text-center">
+              <p className="text-sm font-medium">No goal to focus on</p>
+              <p className="text-xs text-muted-foreground">Tap to add your first goal</p>
+            </div>
+          </Link>
+        );
+      }
+      return (
+        <Link to="/goals" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={Target} label="Today's focus" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="mt-3 rounded-2xl bg-gradient-aurora p-5 text-primary-foreground shadow-glow">
+            <p className="text-[10px] uppercase tracking-[0.2em] opacity-80">Most important</p>
+            <p className="mt-1.5 font-display text-2xl font-bold leading-tight line-clamp-2">{focus.title}</p>
+            <div className="mt-4 flex items-center justify-between text-xs">
+              <span className="opacity-90">{focus.progress}% complete</span>
+              {focus.deadline && <span className="opacity-90">Due {new Date(focus.deadline).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>}
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-white transition-all" style={{ width: `${focus.progress}%` }} />
+            </div>
+          </div>
+        </Link>
+      );
+    }
+    case "todayInsight": {
+      const headline = p.insights.insights[0] ?? "Log one activity today to start your streak.";
+      return (
+        <Link to="/insights" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={Lightbulb} label="Today's insight" iconClass="text-warning" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <p className="mt-3 font-display text-lg font-semibold leading-snug">{headline}</p>
+          <p className="mt-2 text-xs text-muted-foreground">Tap to open the full reality check</p>
+        </Link>
+      );
+    }
     case "stats":
       if (compact) return (
         <StatRing value={p.studyToday} max={STUDY_DAILY_TARGET} size={140} label={formatMinutes(p.studyToday)} sub="study today" />

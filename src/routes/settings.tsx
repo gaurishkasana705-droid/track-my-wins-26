@@ -24,6 +24,8 @@ export const Route = createFileRoute("/settings")({
 
 const WIDGETS = [
   { key: "welcome", label: "Welcome hero" },
+  { key: "todayFocus", label: "Today's focus" },
+  { key: "todayInsight", label: "Today's insight" },
   { key: "stats", label: "Summary stats" },
   { key: "chart", label: "7-day chart" },
   { key: "streak", label: "Streak panel" },
@@ -147,9 +149,9 @@ function SettingsView() {
         <CardContent className="pt-6">
           <Button variant="outline" onClick={() => setPrefs({
             theme: "system", font_family: "space-grotesk", font_scale: 1, progress_style: "ring",
-            widget_visibility: { welcome: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+            widget_visibility: { welcome: true, todayFocus: true, todayInsight: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
             widget_shapes: {}, widget_sizes: {},
-            dashboard_layout: ["welcome", "stats", "chart", "streak", "goals", "discipline"],
+            dashboard_layout: ["welcome", "todayFocus", "todayInsight", "stats", "chart", "streak", "goals", "discipline"],
           })}>
             <RotateCcw className="mr-1.5 h-4 w-4" />Reset to defaults
           </Button>

@@ -58,6 +58,20 @@ function InsightsView() {
         </h2>
       </div>
 
+      {/* Hero insight — the one thing to know */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-aurora p-6 text-primary-foreground shadow-elegant sm:p-8">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/15 blur-3xl" />
+        <p className="text-xs uppercase tracking-[0.2em] opacity-80">This week</p>
+        <p className="mt-2 font-display text-2xl font-bold leading-snug sm:text-4xl">
+          {data.insights[0] ?? "Steady week. Small steps compound."}
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-medium">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur"><Activity className="h-3 w-3" />Discipline {data.disciplineScore}</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur"><TrendIcon className="h-3 w-3" />{data.disciplineDelta > 0 ? "+" : ""}{data.disciplineDelta} vs last week</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur">{data.consistencyScore}% consistent</span>
+        </div>
+      </div>
+
       {/* Discipline score */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-1 overflow-hidden">
