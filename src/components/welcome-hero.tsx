@@ -1,5 +1,6 @@
 import { Flame, Sparkles, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
 import { StatRing } from "@/components/ui/stat-ring";
+import { CountUp } from "@/components/count-up";
 import { useAuth } from "@/hooks/use-auth";
 
 export function WelcomeHero({
@@ -40,8 +41,8 @@ export function WelcomeHero({
             {insight}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-            <Chip icon={Flame} label={`${streak} day streak`} />
-            <Chip icon={Activity} label={`${consistencyScore}% consistent`} />
+            <Chip icon={Flame} label={<span><CountUp value={streak} /> day streak</span>} />
+            <Chip icon={Activity} label={<span><CountUp value={consistencyScore} />% consistent</span>} />
             <Chip icon={Sparkles} label={<span className="inline-flex items-center gap-1"><Trend className={`h-3 w-3 ${trendCls === "text-muted-foreground" ? "" : ""}`} />{disciplineDelta > 0 ? "+" : ""}{disciplineDelta} vs last wk</span>} />
           </div>
         </div>
