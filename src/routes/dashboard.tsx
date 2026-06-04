@@ -37,6 +37,8 @@ const WORKOUT_WEEKLY_TARGET = 5;
 
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
+  todayFocus: "Today's focus",
+  todayInsight: "Today's insight",
   stats: "Summary stats",
   chart: "7-day chart",
   streak: "Streak",
@@ -68,12 +70,12 @@ const SIZE_CLASSES: Record<WidgetSize, string> = {
   lg: "col-span-6",
 };
 
-function defaultShape(key: string): WidgetShape {
-  if (key === "welcome") return "rounded";
+function defaultShape(_key: string): WidgetShape {
   return "rounded";
 }
 function defaultSize(key: string): WidgetSize {
-  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline") return "lg";
+  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
+  if (key === "todayInsight") return "lg";
   return "md";
 }
 
