@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check } from "lucide-react";
+import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight } from "lucide-react";
 import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -12,6 +12,7 @@ import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } fro
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
+import { CountUp } from "@/components/count-up";
 import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { computeInsights } from "@/lib/insights";
