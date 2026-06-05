@@ -100,12 +100,13 @@ function DashboardView() {
       const today = isoDate(new Date());
       const since7 = isoDate(daysAgo(6));
 
-      const [study, workouts, goals, trackers, entries] = await Promise.all([
-        supabase.from("study_sessions").select("duration_minutes, subject, session_date").gte("session_date", since30),
-        supabase.from("workouts").select("duration_minutes, workout_type, workout_date").gte("workout_date", since30),
-        supabase.from("goals").select("id, title, progress, completed, deadline").order("created_at", { ascending: false }),
+      const [study, workouts, goals, trackers, entries, focus] = await Promise.all([
+        supabase.from("study_sessions").select("duration_minutes, subject, session_date, created_at").gte("session_date", since30),
+        supabase.from("workouts").select("duration_minutes, workout_type, workout_date, created_at").gte("workout_date", since30),
+        supabase.from("goals").select("id, title, progress, completed, deadline, created_at").order("created_at", { ascending: false }),
         supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
         supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        supabase.from("focus_sessions").select("duration_minutes, session_date, label, created_at").gte("session_date", since30),
       ]);
 
       return {
@@ -114,6 +115,7 @@ function DashboardView() {
         goals: goals.data ?? [],
         trackers: trackers.data ?? [],
         entries: entries.data ?? [],
+        focus: focus.data ?? [],
         today, since7,
       };
     },
@@ -122,6 +124,7 @@ function DashboardView() {
   const study = data?.study ?? [];
   const workouts = data?.workouts ?? [];
   const goals = data?.goals ?? [];
+  const focus = data?.focus ?? [];
 
   const todayStudy = study.filter((s) => s.session_date === data?.today).reduce((a, b) => a + b.duration_minutes, 0);
   const weekStudy = study.filter((s) => s.session_date >= (data?.since7 ?? "")).reduce((a, b) => a + b.duration_minutes, 0);
