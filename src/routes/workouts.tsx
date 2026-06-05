@@ -204,3 +204,77 @@ function AddWorkoutDialog({ open, onOpenChange, userId, onAdded }: { open: boole
     </Dialog>
   );
 }
+
+function WorkoutStopwatch({ userId, onLogged }: { userId: string; onLogged: () => void }) {
+  const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0); // seconds
+  const [type, setType] = useState("Strength");
+  const [notes, setNotes] = useState("");
+  const startedAt = useRef<number | null>(null);
+  const baseRef = useRef(0);
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setElapsed(baseRef.current + Math.floor((Date.now() - (startedAt.current ?? Date.now())) / 1000));
+    }, 500);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const start = () => { startedAt.current = Date.now(); baseRef.current = elapsed; setRunning(true); };
+  const pause = () => { setRunning(false); };
+  const reset = () => { setRunning(false); setElapsed(0); baseRef.current = 0; };
+
+  const stop = async () => {
+    setRunning(false);
+    const minutes = Math.max(1, Math.round(elapsed / 60));
+    const { error } = await supabase.from("workouts").insert({
+      user_id: userId, workout_type: type, duration_minutes: minutes,
+      workout_date: isoDate(new Date()), notes: notes.trim() || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(`Logged ${minutes}m ${type}`);
+    reset(); setNotes("");
+    onLogged();
+  };
+
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4 text-primary" />Workout timer</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col items-center gap-3">
+          <p className="font-display text-5xl font-bold tabular-nums tracking-tight">
+            {h > 0 && `${String(h).padStart(2, "0")}:`}{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {!running ? (
+              <Button onClick={start} className="shadow-glow"><Play className="mr-1.5 h-4 w-4" />Start</Button>
+            ) : (
+              <Button onClick={pause} variant="secondary"><Pause className="mr-1.5 h-4 w-4" />Pause</Button>
+            )}
+            <Button onClick={stop} variant="outline" disabled={elapsed < 30}>
+              <Square className="mr-1.5 h-4 w-4" />Stop & log
+            </Button>
+            {elapsed > 0 && !running && (
+              <Button onClick={reset} variant="ghost">Reset</Button>
+            )}
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {WORKOUT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input placeholder="Quick note (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
