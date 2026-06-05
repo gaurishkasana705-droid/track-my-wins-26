@@ -286,6 +286,10 @@ function DashboardView() {
                     goals={goals}
                     chart={chart}
                     insights={insights}
+                    todayFocus={todayFocus}
+                    weekFocus={weekFocus}
+                    monthFocus={monthFocus}
+                    recent={recent}
                   />
                 </SortableWidget>
               );
