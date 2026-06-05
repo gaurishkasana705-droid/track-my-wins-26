@@ -76,6 +76,8 @@ function WorkoutsView() {
         <AddWorkoutDialog open={open} onOpenChange={setOpen} userId={user!.id} onAdded={refresh} />
       </div>
 
+      <WorkoutStopwatch userId={user!.id} onLogged={refresh} />
+
       <div className="grid gap-4 sm:grid-cols-3">
         <MiniStat icon={Dumbbell} label="Total workouts" value={String(total)} />
         <MiniStat icon={Clock} label="Total time" value={formatMinutes(totalMin)} />
