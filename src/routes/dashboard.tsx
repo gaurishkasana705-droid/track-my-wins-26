@@ -81,7 +81,8 @@ function defaultShape(_key: string): WidgetShape {
 }
 function defaultSize(key: string): WidgetSize {
   if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
-  if (key === "todayInsight") return "lg";
+  if (key === "todayInsight" || key === "recentActivity" || key === "upcomingGoals" || key === "dailySummary") return "lg";
+  if (key === "focusTime" || key === "quickProgress") return "md";
   return "md";
 }
 
