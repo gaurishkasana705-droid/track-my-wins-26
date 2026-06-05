@@ -191,7 +191,10 @@ function DashboardView() {
   }, [prefs.dashboard_layout, prefs.widget_visibility]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Desktop: small drag distance threshold. Mobile gets TouchSensor below.
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Long-press to drag on touch devices — prevents accidental drags while scrolling.
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
     useSensor(KeyboardSensor),
   );
 
