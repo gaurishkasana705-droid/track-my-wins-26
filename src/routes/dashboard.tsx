@@ -39,12 +39,17 @@ const WORKOUT_WEEKLY_TARGET = 5;
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
   todayFocus: "Today's focus",
+  focusTime: "Focus time",
   todayInsight: "Today's insight",
+  quickProgress: "Quick progress",
   stats: "Summary stats",
   chart: "7-day chart",
+  upcomingGoals: "Upcoming goals",
+  recentActivity: "Recent activity",
   streak: "Streak",
   goals: "Active goals",
   discipline: "Discipline breakdown",
+  dailySummary: "Daily summary",
 };
 
 const SHAPE_OPTIONS: { value: WidgetShape; label: string }[] = [
