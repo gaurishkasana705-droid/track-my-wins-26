@@ -390,6 +390,7 @@ function SortableWidget({
 
 // ───────────── Widget bodies ─────────────
 
+type RecentEvent = { kind: "study" | "workout" | "focus" | "goal"; title: string; meta: string; at: string };
 type RenderProps = {
   widget: string;
   shape: WidgetShape;
@@ -400,6 +401,8 @@ type RenderProps = {
   goals: Array<{ id: string; title: string; progress: number; completed: boolean; deadline?: string | null }>;
   chart: Array<{ day: string; study: number; workout: number }>;
   insights: ReturnType<typeof computeInsights>;
+  todayFocus: number; weekFocus: number; monthFocus: number;
+  recent: RecentEvent[];
 };
 
 function RenderWidget(p: RenderProps) {
