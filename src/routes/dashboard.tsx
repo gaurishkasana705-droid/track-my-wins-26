@@ -582,9 +582,155 @@ function RenderWidget(p: RenderProps) {
         </div>
       );
     }
+    case "focusTime":
+      if (compact) return (
+        <StatRing value={p.todayFocus} max={120} size={140} label={formatMinutes(p.todayFocus)} sub="focus today" />
+      );
+      return (
+        <Link to="/focus" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={Brain} label="Focus time" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} accent />
+            <FocusStat label="Week" value={formatMinutes(p.weekFocus)} />
+            <FocusStat label="30d" value={formatMinutes(p.monthFocus)} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground text-center">Tap to start a focus session</p>
+        </Link>
+      );
+    case "quickProgress":
+      if (compact) return (
+        <StatRing value={p.insights.consistencyScore} max={100} size={140} label={`${p.insights.consistencyScore}%`} sub="consistency" />
+      );
+      return (
+        <div>
+          <Header icon={TrendingUp} label="Quick progress" />
+          <div className="mt-4 space-y-3">
+            <ProgressRow label="Study (today)" value={p.studyToday} max={STUDY_DAILY_TARGET} display={formatMinutes(p.studyToday)} />
+            <ProgressRow label="Workouts (week)" value={p.weekWorkouts} max={WORKOUT_WEEKLY_TARGET} display={`${p.weekWorkouts}/${WORKOUT_WEEKLY_TARGET}`} />
+            <ProgressRow label="Focus (today)" value={p.todayFocus} max={120} display={formatMinutes(p.todayFocus)} />
+            <ProgressRow label="Goals avg" value={p.avgProgress} max={100} display={`${p.avgProgress}%`} />
+          </div>
+        </div>
+      );
+    case "upcomingGoals": {
+      const upcoming = [...p.goals.filter((g) => !g.completed && g.deadline)]
+        .sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1))
+        .slice(0, 4);
+      return (
+        <Link to="/goals" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={CalendarDays} label="Upcoming goals" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {upcoming.length === 0 ? (
+            <p className="mt-4 rounded-2xl border-2 border-dashed py-6 text-center text-xs text-muted-foreground">
+              No goals with deadlines yet
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {upcoming.map((g) => {
+                const days = Math.ceil((new Date(g.deadline!).getTime() - Date.now()) / 86400000);
+                return (
+                  <li key={g.id} className="flex items-center justify-between gap-3 rounded-xl border bg-secondary/30 px-3 py-2">
+                    <span className="truncate text-sm font-medium">{g.title}</span>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      days < 0 ? "bg-destructive/15 text-destructive" :
+                      days <= 3 ? "bg-warning/15 text-warning" :
+                      "bg-secondary text-muted-foreground"
+                    )}>
+                      {days < 0 ? `${-days}d late` : days === 0 ? "today" : `${days}d`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Link>
+      );
+    }
+    case "recentActivity":
+      return (
+        <div>
+          <Header icon={Activity} label="Recent activity" />
+          {p.recent.length === 0 ? (
+            <p className="mt-4 rounded-2xl border-2 border-dashed py-6 text-center text-xs text-muted-foreground">
+              No activity yet — log something to start your streak
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {p.recent.slice(0, 6).map((e, i) => {
+                const Icon = e.kind === "study" ? BookOpen : e.kind === "workout" ? Dumbbell : e.kind === "focus" ? Brain : Target;
+                return (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-[11px] text-muted-foreground">{e.kind} · {e.meta}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      );
+    case "dailySummary":
+      return (
+        <div>
+          <Header icon={ListChecks} label="Today" />
+          <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <SummaryTile icon={BookOpen} label="Study" value={formatMinutes(p.studyToday)} />
+            <SummaryTile icon={Brain} label="Focus" value={formatMinutes(p.todayFocus)} />
+            <SummaryTile icon={Dumbbell} label="Week" value={`${p.weekWorkouts} workouts`} />
+            <SummaryTile icon={Flame} label="Streak" value={`${p.streak} days`} />
+          </div>
+        </div>
+      );
     default:
       return null;
   }
+}
+
+function ProgressRow({ label, value, max, display }: { label: string; value: number; max: number; display: string }) {
+  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="font-medium">{label}</span>
+        <span className="tabular-nums text-muted-foreground">{display}</span>
+      </div>
+      <Progress value={pct} className="h-1.5" />
+    </div>
+  );
+}
+
+function FocusStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={cn("rounded-xl p-3", accent ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary/40")}>
+      <p className="font-display text-lg font-bold tabular-nums leading-none">{value}</p>
+      <p className={cn("mt-1 text-[10px] uppercase tracking-wider", accent ? "opacity-80" : "text-muted-foreground")}>{label}</p>
+    </div>
+  );
+}
+
+function SummaryTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border bg-secondary/30 p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3 w-3" /> {label}
+      </div>
+      <p className="mt-1 font-display text-base font-bold tabular-nums">{value}</p>
+    </div>
+  );
 }
 
 function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React.ElementType; label: string; iconClass?: string }) {
