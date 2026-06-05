@@ -141,6 +141,10 @@ function DashboardView() {
     else if (i > 0) break;
   }
 
+  const todayFocus = focus.filter((f) => f.session_date === data?.today).reduce((a, b) => a + b.duration_minutes, 0);
+  const weekFocus = focus.filter((f) => f.session_date >= (data?.since7 ?? "")).reduce((a, b) => a + b.duration_minutes, 0);
+  const monthFocus = focus.reduce((a, b) => a + b.duration_minutes, 0);
+
   const chart = useMemo(() => Array.from({ length: 7 }).map((_, i) => {
     const d = isoDate(daysAgo(6 - i));
     const label = new Date(d).toLocaleDateString(undefined, { weekday: "short" });
@@ -150,6 +154,17 @@ function DashboardView() {
       workout: workouts.filter((w) => w.workout_date === d).reduce((a, b) => a + b.duration_minutes, 0) / 60,
     };
   }), [study, workouts]);
+
+  // Recent activity feed (last 10 events across study/workout/focus/goals)
+  type Event = { kind: "study" | "workout" | "focus" | "goal"; title: string; meta: string; at: string };
+  const recent: Event[] = useMemo(() => {
+    const ev: Event[] = [];
+    for (const s of study) ev.push({ kind: "study", title: s.subject || "Study", meta: formatMinutes(s.duration_minutes), at: s.created_at ?? s.session_date });
+    for (const w of workouts) ev.push({ kind: "workout", title: w.workout_type, meta: formatMinutes(w.duration_minutes), at: w.created_at ?? w.workout_date });
+    for (const f of focus) ev.push({ kind: "focus", title: f.label || "Focus session", meta: formatMinutes(f.duration_minutes), at: f.created_at ?? f.session_date });
+    for (const g of goals.filter((g) => g.completed)) ev.push({ kind: "goal", title: g.title, meta: "Completed", at: g.created_at ?? "" });
+    return ev.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
+  }, [study, workouts, focus, goals]);
 
   const insights = useMemo(() => computeInsights(
     study.map((s) => ({ session_date: s.session_date, duration_minutes: s.duration_minutes })),
