@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Settings, User, ListChecks, Activity } from "lucide-react";
+import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
 import { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { ProfileDrawer } from "@/components/profile-drawer";
 const PRIMARY_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/insights", label: "Insights", icon: Activity },
+  { to: "/focus", label: "Focus", icon: Brain },
   { to: "/study", label: "Study", icon: BookOpen },
   { to: "/workouts", label: "Workouts", icon: Dumbbell },
   { to: "/goals", label: "Goals", icon: Target },
@@ -17,10 +18,10 @@ const PRIMARY_NAV = [
 
 const MOBILE_NAV = [
   { to: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { to: "/insights", label: "Insights", icon: Activity },
+  { to: "/focus", label: "Focus", icon: Brain },
   { to: "/trackers", label: "Trackers", icon: ListChecks },
   { to: "/goals", label: "Goals", icon: Target },
-  { to: "/study", label: "Study", icon: BookOpen },
+  { to: "/insights", label: "Insights", icon: Activity },
 ] as const;
 
 const SECONDARY_NAV = [

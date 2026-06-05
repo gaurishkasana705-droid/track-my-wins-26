@@ -1,14 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, TrendingUp, TrendingDown, Trophy, AlertTriangle, Lightbulb, Activity, Minus } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Lightbulb, Activity, Minus, ChevronDown, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { StatRing } from "@/components/ui/stat-ring";
 import { computeInsights } from "@/lib/insights";
 import { daysAgo, isoDate, formatMinutes } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/insights")({
   head: () => ({ meta: [{ title: "Insights — LifeTrack" }] }),
@@ -23,6 +26,7 @@ export const Route = createFileRoute("/insights")({
 
 function InsightsView() {
   const { user } = useAuth();
+  const [expanded, setExpanded] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["insights", user!.id],
@@ -45,174 +49,133 @@ function InsightsView() {
 
   if (isLoading || !data) return <p className="text-sm text-muted-foreground">Analyzing your week…</p>;
 
-  const trendIcon = data.disciplineDelta > 0 ? TrendingUp : data.disciplineDelta < 0 ? TrendingDown : Minus;
-  const TrendIcon = trendIcon;
+  const TrendIcon = data.disciplineDelta > 0 ? TrendingUp : data.disciplineDelta < 0 ? TrendingDown : Minus;
   const trendClass = data.disciplineDelta > 0 ? "text-success" : data.disciplineDelta < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-5 animate-fade-up">
       <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Weekly reality check</p>
-        <h2 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          How was your week<span className="text-gradient">?</span>
-        </h2>
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Weekly check-in</p>
+        <h2 className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl">How was your week?</h2>
       </div>
 
       {/* Hero insight — the one thing to know */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-aurora p-6 text-primary-foreground shadow-elegant sm:p-8">
         <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-white/15 blur-3xl" />
-        <p className="text-xs uppercase tracking-[0.2em] opacity-80">This week</p>
-        <p className="mt-2 font-display text-2xl font-bold leading-snug sm:text-4xl">
+        <p className="text-xs uppercase tracking-[0.2em] opacity-80">This week's insight</p>
+        <p className="mt-2 font-display text-2xl font-bold leading-snug sm:text-3xl">
           {data.insights[0] ?? "Steady week. Small steps compound."}
         </p>
-        <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-medium">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur"><Activity className="h-3 w-3" />Discipline {data.disciplineScore}</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur"><TrendIcon className="h-3 w-3" />{data.disciplineDelta > 0 ? "+" : ""}{data.disciplineDelta} vs last week</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur">{data.consistencyScore}% consistent</span>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-medium">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur">
+            <Activity className="h-3 w-3" /> Discipline {data.disciplineScore}
+          </span>
+          <span className={cn("inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 backdrop-blur")}>
+            <TrendIcon className="h-3 w-3" />{data.disciplineDelta > 0 ? "+" : ""}{data.disciplineDelta} vs last week
+          </span>
         </div>
       </div>
 
-      {/* Discipline score */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="md:col-span-1 overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Activity className="h-4 w-4 text-primary" /> Discipline Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-3 pb-6">
-            <StatRing value={data.disciplineScore} max={100} size={160} stroke={12} label={`${data.disciplineScore}`} sub="out of 100" />
-            <div className={`flex items-center gap-1.5 text-sm font-medium ${trendClass}`}>
-              <TrendIcon className="h-4 w-4" />
-              {data.disciplineDelta > 0 ? "+" : ""}{data.disciplineDelta} vs last week
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" /> Smart insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.insights.map((line, i) => (
-              <div key={i} className="flex gap-3 rounded-xl border bg-secondary/30 p-3">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-primary text-primary-foreground text-xs font-bold">
-                  {i + 1}
-                </span>
-                <p className="pt-0.5 text-sm leading-relaxed">{line}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Key stats — three at a glance */}
+      <div className="grid grid-cols-3 gap-3">
+        <KeyStat label="Discipline" value={`${data.disciplineScore}`} sub="out of 100" />
+        <KeyStat label="Study" value={formatMinutes(data.thisWeek.studyMinutes)} sub={`${data.thisWeek.studyDays}/7 days`} />
+        <KeyStat label="Workouts" value={`${data.thisWeek.workoutCount}`} sub="this week" />
       </div>
 
-      {/* Discipline breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">What goes into your discipline score</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            { label: "Study consistency", value: data.breakdown.study, weight: data.breakdown.weights.study, hint: "Days you studied this week" },
-            { label: "Workout consistency", value: data.breakdown.workout, weight: data.breakdown.weights.workout, hint: "Days you trained (target 4/wk)" },
-            { label: "Habit completion", value: data.breakdown.habit, weight: data.breakdown.weights.habit, hint: "Custom trackers hit vs target" },
-            { label: "Volume vs target", value: data.breakdown.volume, weight: data.breakdown.weights.volume, hint: "Total study minutes and workouts" },
-          ].map((r) => (
-            <div key={r.label} className="rounded-xl border bg-secondary/30 p-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{r.label}</span>
-                <span className="tabular-nums text-muted-foreground">{r.value}% · weight {r.weight}</span>
-              </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">{r.hint}</p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-                <div className="h-full rounded-full bg-gradient-primary transition-all" style={{ width: `${r.value}%` }} />
-              </div>
+      {/* One recommended action */}
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
+              <Lightbulb className="h-4 w-4" />
             </div>
-          ))}
+            <div>
+              <p className="text-xs uppercase tracking-wider text-primary">Try this next</p>
+              <p className="mt-1 font-medium leading-snug">{data.recommendation}</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link to="/dashboard">
+              Start now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Productivity patterns */}
-      {data.patterns.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base"><Activity className="h-4 w-4 text-primary" />Productivity patterns</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2.5">
-            {data.patterns.map((p, i) => (
-              <div key={i} className="flex gap-3 rounded-xl border bg-card p-3 text-sm leading-relaxed">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-secondary text-primary text-[10px] font-bold">{i + 1}</span>
-                {p}
+      {/* See more breakdown */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border bg-card py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {expanded ? "Hide details" : "See breakdown"}
+        <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
+      </button>
+
+      {expanded && (
+        <div className="space-y-4 animate-fade-up">
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 pt-6">
+              <StatRing value={data.disciplineScore} max={100} size={140} stroke={11} label={`${data.disciplineScore}`} sub="discipline" />
+              <div className={`flex items-center gap-1.5 text-sm font-medium ${trendClass}`}>
+                <TrendIcon className="h-4 w-4" />
+                {data.disciplineDelta > 0 ? "+" : ""}{data.disciplineDelta} vs last week
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {data.insights.length > 1 && (
+            <Card>
+              <CardContent className="space-y-2.5 pt-6">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" /> More insights
+                </div>
+                {data.insights.slice(1).map((line, i) => (
+                  <p key={i} className="rounded-xl border bg-secondary/30 p-3 text-sm leading-relaxed">{line}</p>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">This vs last week</p>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Compare label="Study time" current={formatMinutes(data.thisWeek.studyMinutes)} delta={data.thisWeek.studyMinutes - data.lastWeek.studyMinutes} unit="m" />
+                <Compare label="Study days" current={`${data.thisWeek.studyDays}/7`} delta={data.thisWeek.studyDays - data.lastWeek.studyDays} />
+                <Compare label="Workouts" current={String(data.thisWeek.workoutCount)} delta={data.thisWeek.workoutCount - data.lastWeek.workoutCount} />
+                <Compare label="Habit rate" current={`${Math.round(data.thisWeek.habitCompletionRate * 100)}%`} delta={Math.round((data.thisWeek.habitCompletionRate - data.lastWeek.habitCompletionRate) * 100)} unit="%" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
-
-
-      {/* Reality check */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="hover-lift">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-success">
-              <Trophy className="h-3.5 w-3.5" /> Biggest win
-            </div>
-            <p className="mt-2 font-display text-lg font-semibold">{data.biggestWin}</p>
-          </CardContent>
-        </Card>
-        <Card className="hover-lift">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-warning">
-              <AlertTriangle className="h-3.5 w-3.5" /> Biggest weakness
-            </div>
-            <p className="mt-2 font-display text-lg font-semibold">{data.biggestWeakness}</p>
-          </CardContent>
-        </Card>
-        <Card className="hover-lift">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-primary">
-              <Lightbulb className="h-3.5 w-3.5" /> Recommendation
-            </div>
-            <p className="mt-2 text-sm leading-relaxed">{data.recommendation}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* This vs last week */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">This week vs last week</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Compare label="Study time" current={formatMinutes(data.thisWeek.studyMinutes)} prev={formatMinutes(data.lastWeek.studyMinutes)} delta={data.thisWeek.studyMinutes - data.lastWeek.studyMinutes} unit="m" />
-            <Compare label="Study days" current={`${data.thisWeek.studyDays}/7`} prev={`${data.lastWeek.studyDays}/7`} delta={data.thisWeek.studyDays - data.lastWeek.studyDays} />
-            <Compare label="Workouts" current={String(data.thisWeek.workoutCount)} prev={String(data.lastWeek.workoutCount)} delta={data.thisWeek.workoutCount - data.lastWeek.workoutCount} />
-            <Compare label="Habit rate" current={`${Math.round(data.thisWeek.habitCompletionRate * 100)}%`} prev={`${Math.round(data.lastWeek.habitCompletionRate * 100)}%`} delta={Math.round((data.thisWeek.habitCompletionRate - data.lastWeek.habitCompletionRate) * 100)} unit="%" />
-          </div>
-          <div className="mt-6 rounded-xl border bg-secondary/30 p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Consistency score</p>
-            <p className="mt-1 font-display text-2xl font-bold">{data.consistencyScore}%</p>
-            <p className="mt-1 text-xs text-muted-foreground">Average of study, workout, and habit consistency this week.</p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
 
-function Compare({ label, current, prev, delta, unit = "" }: { label: string; current: string; prev: string; delta: number; unit?: string }) {
+function KeyStat({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <Card>
+      <CardContent className="pt-5 pb-5 text-center">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="mt-1 font-display text-2xl font-bold tabular-nums">{value}</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Compare({ label, current, delta, unit = "" }: { label: string; current: string; delta: number; unit?: string }) {
   const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   const cls = delta > 0 ? "text-success" : delta < 0 ? "text-destructive" : "text-muted-foreground";
   return (
-    <div className="rounded-xl border bg-background p-4">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 font-display text-2xl font-bold">{current}</p>
-      <div className={`mt-1 flex items-center gap-1 text-xs font-medium ${cls}`}>
+    <div className="rounded-xl border bg-background p-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-lg font-bold tabular-nums">{current}</p>
+      <div className={`mt-0.5 flex items-center gap-1 text-[11px] font-medium ${cls}`}>
         <Icon className="h-3 w-3" />
-        {delta > 0 ? "+" : ""}{delta}{unit} from {prev}
+        {delta > 0 ? "+" : ""}{delta}{unit}
       </div>
     </div>
   );

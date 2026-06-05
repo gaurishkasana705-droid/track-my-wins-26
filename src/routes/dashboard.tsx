@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight } from "lucide-react";
-import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
+import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight, Brain, TrendingUp, ListChecks } from "lucide-react";
+import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -39,12 +39,17 @@ const WORKOUT_WEEKLY_TARGET = 5;
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
   todayFocus: "Today's focus",
+  focusTime: "Focus time",
   todayInsight: "Today's insight",
+  quickProgress: "Quick progress",
   stats: "Summary stats",
   chart: "7-day chart",
+  upcomingGoals: "Upcoming goals",
+  recentActivity: "Recent activity",
   streak: "Streak",
   goals: "Active goals",
   discipline: "Discipline breakdown",
+  dailySummary: "Daily summary",
 };
 
 const SHAPE_OPTIONS: { value: WidgetShape; label: string }[] = [
@@ -76,7 +81,8 @@ function defaultShape(_key: string): WidgetShape {
 }
 function defaultSize(key: string): WidgetSize {
   if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
-  if (key === "todayInsight") return "lg";
+  if (key === "todayInsight" || key === "recentActivity" || key === "upcomingGoals" || key === "dailySummary") return "lg";
+  if (key === "focusTime" || key === "quickProgress") return "md";
   return "md";
 }
 
@@ -94,12 +100,13 @@ function DashboardView() {
       const today = isoDate(new Date());
       const since7 = isoDate(daysAgo(6));
 
-      const [study, workouts, goals, trackers, entries] = await Promise.all([
-        supabase.from("study_sessions").select("duration_minutes, subject, session_date").gte("session_date", since30),
-        supabase.from("workouts").select("duration_minutes, workout_type, workout_date").gte("workout_date", since30),
-        supabase.from("goals").select("id, title, progress, completed, deadline").order("created_at", { ascending: false }),
+      const [study, workouts, goals, trackers, entries, focus] = await Promise.all([
+        supabase.from("study_sessions").select("duration_minutes, subject, session_date, created_at").gte("session_date", since30),
+        supabase.from("workouts").select("duration_minutes, workout_type, workout_date, created_at").gte("workout_date", since30),
+        supabase.from("goals").select("id, title, progress, completed, deadline, created_at").order("created_at", { ascending: false }),
         supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
         supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        supabase.from("focus_sessions").select("duration_minutes, session_date, label, created_at").gte("session_date", since30),
       ]);
 
       return {
@@ -108,6 +115,7 @@ function DashboardView() {
         goals: goals.data ?? [],
         trackers: trackers.data ?? [],
         entries: entries.data ?? [],
+        focus: focus.data ?? [],
         today, since7,
       };
     },
@@ -116,6 +124,7 @@ function DashboardView() {
   const study = data?.study ?? [];
   const workouts = data?.workouts ?? [];
   const goals = data?.goals ?? [];
+  const focus = data?.focus ?? [];
 
   const todayStudy = study.filter((s) => s.session_date === data?.today).reduce((a, b) => a + b.duration_minutes, 0);
   const weekStudy = study.filter((s) => s.session_date >= (data?.since7 ?? "")).reduce((a, b) => a + b.duration_minutes, 0);
@@ -132,6 +141,10 @@ function DashboardView() {
     else if (i > 0) break;
   }
 
+  const todayFocus = focus.filter((f) => f.session_date === data?.today).reduce((a, b) => a + b.duration_minutes, 0);
+  const weekFocus = focus.filter((f) => f.session_date >= (data?.since7 ?? "")).reduce((a, b) => a + b.duration_minutes, 0);
+  const monthFocus = focus.reduce((a, b) => a + b.duration_minutes, 0);
+
   const chart = useMemo(() => Array.from({ length: 7 }).map((_, i) => {
     const d = isoDate(daysAgo(6 - i));
     const label = new Date(d).toLocaleDateString(undefined, { weekday: "short" });
@@ -141,6 +154,17 @@ function DashboardView() {
       workout: workouts.filter((w) => w.workout_date === d).reduce((a, b) => a + b.duration_minutes, 0) / 60,
     };
   }), [study, workouts]);
+
+  // Recent activity feed (last 10 events across study/workout/focus/goals)
+  type Event = { kind: "study" | "workout" | "focus" | "goal"; title: string; meta: string; at: string };
+  const recent: Event[] = useMemo(() => {
+    const ev: Event[] = [];
+    for (const s of study) ev.push({ kind: "study", title: s.subject || "Study", meta: formatMinutes(s.duration_minutes), at: s.created_at ?? s.session_date });
+    for (const w of workouts) ev.push({ kind: "workout", title: w.workout_type, meta: formatMinutes(w.duration_minutes), at: w.created_at ?? w.workout_date });
+    for (const f of focus) ev.push({ kind: "focus", title: f.label || "Focus session", meta: formatMinutes(f.duration_minutes), at: f.created_at ?? f.session_date });
+    for (const g of goals.filter((g) => g.completed)) ev.push({ kind: "goal", title: g.title, meta: "Completed", at: g.created_at ?? "" });
+    return ev.sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, 8);
+  }, [study, workouts, focus, goals]);
 
   const insights = useMemo(() => computeInsights(
     study.map((s) => ({ session_date: s.session_date, duration_minutes: s.duration_minutes })),
@@ -167,7 +191,10 @@ function DashboardView() {
   }, [prefs.dashboard_layout, prefs.widget_visibility]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Desktop: small drag distance threshold. Mobile gets TouchSensor below.
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Long-press to drag on touch devices — prevents accidental drags while scrolling.
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -203,7 +230,7 @@ function DashboardView() {
       dashboard_layout: DEFAULT_LAYOUT,
       widget_shapes: {},
       widget_sizes: {},
-      widget_visibility: { welcome: true, todayFocus: true, todayInsight: true, stats: true, chart: true, goals: true, streak: true, discipline: true, customTrackers: true },
+      widget_visibility: { welcome: true, todayFocus: true, focusTime: true, todayInsight: true, quickProgress: true, stats: true, chart: true, upcomingGoals: true, recentActivity: true, goals: true, streak: true, discipline: true, dailySummary: true, customTrackers: true },
     });
     toast.success("Layout reset to default");
   };
@@ -259,6 +286,10 @@ function DashboardView() {
                     goals={goals}
                     chart={chart}
                     insights={insights}
+                    todayFocus={todayFocus}
+                    weekFocus={weekFocus}
+                    monthFocus={monthFocus}
+                    recent={recent}
                   />
                 </SortableWidget>
               );
@@ -359,6 +390,7 @@ function SortableWidget({
 
 // ───────────── Widget bodies ─────────────
 
+type RecentEvent = { kind: "study" | "workout" | "focus" | "goal"; title: string; meta: string; at: string };
 type RenderProps = {
   widget: string;
   shape: WidgetShape;
@@ -369,6 +401,8 @@ type RenderProps = {
   goals: Array<{ id: string; title: string; progress: number; completed: boolean; deadline?: string | null }>;
   chart: Array<{ day: string; study: number; workout: number }>;
   insights: ReturnType<typeof computeInsights>;
+  todayFocus: number; weekFocus: number; monthFocus: number;
+  recent: RecentEvent[];
 };
 
 function RenderWidget(p: RenderProps) {
@@ -548,9 +582,155 @@ function RenderWidget(p: RenderProps) {
         </div>
       );
     }
+    case "focusTime":
+      if (compact) return (
+        <StatRing value={p.todayFocus} max={120} size={140} label={formatMinutes(p.todayFocus)} sub="focus today" />
+      );
+      return (
+        <Link to="/focus" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={Brain} label="Focus time" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} accent />
+            <FocusStat label="Week" value={formatMinutes(p.weekFocus)} />
+            <FocusStat label="30d" value={formatMinutes(p.monthFocus)} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground text-center">Tap to start a focus session</p>
+        </Link>
+      );
+    case "quickProgress":
+      if (compact) return (
+        <StatRing value={p.insights.consistencyScore} max={100} size={140} label={`${p.insights.consistencyScore}%`} sub="consistency" />
+      );
+      return (
+        <div>
+          <Header icon={TrendingUp} label="Quick progress" />
+          <div className="mt-4 space-y-3">
+            <ProgressRow label="Study (today)" value={p.studyToday} max={STUDY_DAILY_TARGET} display={formatMinutes(p.studyToday)} />
+            <ProgressRow label="Workouts (week)" value={p.weekWorkouts} max={WORKOUT_WEEKLY_TARGET} display={`${p.weekWorkouts}/${WORKOUT_WEEKLY_TARGET}`} />
+            <ProgressRow label="Focus (today)" value={p.todayFocus} max={120} display={formatMinutes(p.todayFocus)} />
+            <ProgressRow label="Goals avg" value={p.avgProgress} max={100} display={`${p.avgProgress}%`} />
+          </div>
+        </div>
+      );
+    case "upcomingGoals": {
+      const upcoming = [...p.goals.filter((g) => !g.completed && g.deadline)]
+        .sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1))
+        .slice(0, 4);
+      return (
+        <Link to="/goals" className="block h-full">
+          <div className="flex items-center justify-between">
+            <Header icon={CalendarDays} label="Upcoming goals" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          {upcoming.length === 0 ? (
+            <p className="mt-4 rounded-2xl border-2 border-dashed py-6 text-center text-xs text-muted-foreground">
+              No goals with deadlines yet
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {upcoming.map((g) => {
+                const days = Math.ceil((new Date(g.deadline!).getTime() - Date.now()) / 86400000);
+                return (
+                  <li key={g.id} className="flex items-center justify-between gap-3 rounded-xl border bg-secondary/30 px-3 py-2">
+                    <span className="truncate text-sm font-medium">{g.title}</span>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                      days < 0 ? "bg-destructive/15 text-destructive" :
+                      days <= 3 ? "bg-warning/15 text-warning" :
+                      "bg-secondary text-muted-foreground"
+                    )}>
+                      {days < 0 ? `${-days}d late` : days === 0 ? "today" : `${days}d`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Link>
+      );
+    }
+    case "recentActivity":
+      return (
+        <div>
+          <Header icon={Activity} label="Recent activity" />
+          {p.recent.length === 0 ? (
+            <p className="mt-4 rounded-2xl border-2 border-dashed py-6 text-center text-xs text-muted-foreground">
+              No activity yet — log something to start your streak
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {p.recent.slice(0, 6).map((e, i) => {
+                const Icon = e.kind === "study" ? BookOpen : e.kind === "workout" ? Dumbbell : e.kind === "focus" ? Brain : Target;
+                return (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{e.title}</p>
+                      <p className="text-[11px] text-muted-foreground">{e.kind} · {e.meta}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      );
+    case "dailySummary":
+      return (
+        <div>
+          <Header icon={ListChecks} label="Today" />
+          <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <SummaryTile icon={BookOpen} label="Study" value={formatMinutes(p.studyToday)} />
+            <SummaryTile icon={Brain} label="Focus" value={formatMinutes(p.todayFocus)} />
+            <SummaryTile icon={Dumbbell} label="Week" value={`${p.weekWorkouts} workouts`} />
+            <SummaryTile icon={Flame} label="Streak" value={`${p.streak} days`} />
+          </div>
+        </div>
+      );
     default:
       return null;
   }
+}
+
+function ProgressRow({ label, value, max, display }: { label: string; value: number; max: number; display: string }) {
+  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs">
+        <span className="font-medium">{label}</span>
+        <span className="tabular-nums text-muted-foreground">{display}</span>
+      </div>
+      <Progress value={pct} className="h-1.5" />
+    </div>
+  );
+}
+
+function FocusStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={cn("rounded-xl p-3", accent ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary/40")}>
+      <p className="font-display text-lg font-bold tabular-nums leading-none">{value}</p>
+      <p className={cn("mt-1 text-[10px] uppercase tracking-wider", accent ? "opacity-80" : "text-muted-foreground")}>{label}</p>
+    </div>
+  );
+}
+
+function SummaryTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+  return (
+    <div className="rounded-xl border bg-secondary/30 p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3 w-3" /> {label}
+      </div>
+      <p className="mt-1 font-display text-base font-bold tabular-nums">{value}</p>
+    </div>
+  );
 }
 
 function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React.ElementType; label: string; iconClass?: string }) {
