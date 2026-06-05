@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Plus, Trash2, Dumbbell, Clock, Flame } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Trash2, Dumbbell, Clock, Flame, Play, Pause, Square } from "lucide-react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
