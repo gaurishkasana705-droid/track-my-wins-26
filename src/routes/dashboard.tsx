@@ -88,9 +88,17 @@ function defaultSize(key: string): WidgetSize {
 
 function DashboardView() {
   const { user } = useAuth();
-  const { prefs, setPrefs } = usePreferences();
+  const { prefs, setPrefs, loading: prefsLoading } = usePreferences();
   const uid = user!.id;
   const [editMode, setEditMode] = useState(false);
+  const navigate = useNavigate();
+
+  // First-time user: route to onboarding wizard.
+  useEffect(() => {
+    if (!prefsLoading && !prefs.onboarding_completed) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [prefsLoading, prefs.onboarding_completed, navigate]);
 
   const { data } = useQuery({
     queryKey: ["dashboard", uid],
