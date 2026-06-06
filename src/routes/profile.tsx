@@ -16,11 +16,13 @@ import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { downloadJson } from "@/lib/csv";
 import {
   Download, Trash2, BookOpen, Dumbbell, Target, Save, Flame,
-  Sparkles, Trophy, GraduationCap, Medal, Award, Lock, Zap,
+  Sparkles, Trophy, GraduationCap, Medal, Award, Lock, Zap, Brain,
+  Activity, TrendingUp, TrendingDown, Minus, CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { computeBadges, computeLevel, computeXP, type Badge } from "@/lib/gamification";
+import { computeInsights } from "@/lib/insights";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  Sparkles, Flame, Trophy, BookOpen, GraduationCap, Dumbbell, Medal, Target, Award,
+  Sparkles, Flame, Trophy, BookOpen, GraduationCap, Dumbbell, Medal, Target, Award, Brain,
 };
 
 function ProfileView() {
@@ -71,23 +73,37 @@ function ProfileView() {
   const { data: stats } = useQuery({
     queryKey: ["profile-stats", uid],
     queryFn: async () => {
-      const [s, w, g, entries] = await Promise.all([
+      const since14 = isoDate(daysAgo(13));
+      const [s, w, g, entries, trackers, focus] = await Promise.all([
         supabase.from("study_sessions").select("duration_minutes, session_date"),
         supabase.from("workouts").select("duration_minutes, workout_date"),
         supabase.from("goals").select("completed"),
-        supabase.from("custom_tracker_entries").select("entry_date, value"),
+        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        supabase.from("focus_sessions").select("duration_minutes, session_date"),
       ]);
       const studyRows = s.data ?? [];
       const workoutRows = w.data ?? [];
+      const focusRows = focus.data ?? [];
       const allDates = new Set<string>([
         ...studyRows.map((r) => r.session_date),
         ...workoutRows.map((r) => r.workout_date),
+        ...focusRows.map((r) => r.session_date),
       ]);
       let streak = 0;
       for (let i = 0; i < 365; i++) {
         if (allDates.has(isoDate(daysAgo(i)))) streak++;
         else if (i > 0) break;
       }
+      let best = 0, run = 0;
+      for (let i = 364; i >= 0; i--) {
+        if (allDates.has(isoDate(daysAgo(i)))) { run++; best = Math.max(best, run); } else run = 0;
+      }
+      const insights = computeInsights(
+        studyRows.map((r) => ({ session_date: r.session_date, duration_minutes: r.duration_minutes })),
+        workoutRows.map((r) => ({ workout_date: r.workout_date, duration_minutes: r.duration_minutes })),
+        trackers.data ?? [], entries.data ?? [],
+      );
       return {
         studyMin: studyRows.reduce((a, b) => a + b.duration_minutes, 0),
         workoutCount: workoutRows.length,
@@ -96,7 +112,11 @@ function ProfileView() {
         goalsTotal: (g.data ?? []).length,
         sessionsCount: studyRows.length,
         habitsHit: (entries.data ?? []).filter((e) => Number(e.value) > 0).length,
+        focusMin: focusRows.reduce((a, b) => a + b.duration_minutes, 0),
+        focusCount: focusRows.length,
         streak,
+        bestStreak: Math.max(best, streak),
+        insights,
       };
     },
   });
@@ -134,6 +154,7 @@ function ProfileView() {
       supabase.from("goals").delete().eq("user_id", uid),
       supabase.from("custom_tracker_entries").delete().eq("user_id", uid),
       supabase.from("custom_trackers").delete().eq("user_id", uid),
+      supabase.from("focus_sessions").delete().eq("user_id", uid),
       supabase.from("profiles").delete().eq("user_id", uid),
       supabase.from("user_preferences").delete().eq("user_id", uid),
     ]);
@@ -149,6 +170,7 @@ function ProfileView() {
     goalsDone: stats?.goalsDone ?? 0,
     streak: stats?.streak ?? 0,
     habitsHit: stats?.habitsHit ?? 0,
+    focusMin: stats?.focusMin ?? 0,
   });
   const level = computeLevel(xp);
   const badges = computeBadges({
@@ -156,9 +178,19 @@ function ProfileView() {
     workoutCount: stats?.workoutCount ?? 0,
     goalsDone: stats?.goalsDone ?? 0,
     streak: stats?.streak ?? 0,
+    bestStreak: stats?.bestStreak ?? 0,
     sessionsCount: stats?.sessionsCount ?? 0,
+    focusMin: stats?.focusMin ?? 0,
+    focusCount: stats?.focusCount ?? 0,
+    level: level.level,
   });
   const earned = badges.filter((b) => b.earned).length;
+  const achievementPct = Math.round((earned / badges.length) * 100);
+  const joined = (profile?.created_at || user?.created_at) ? new Date(profile?.created_at || user!.created_at) : null;
+
+  const ins = stats?.insights;
+  const trendIcon = (d: number) => d > 0 ? TrendingUp : d < 0 ? TrendingDown : Minus;
+  const trendClass = (d: number) => d > 0 ? "text-success" : d < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -178,6 +210,7 @@ function ProfileView() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
+              {joined && <p className="mt-0.5 text-xs text-muted-foreground">Joined {joined.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>}
             </div>
             <div className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm">
               <Flame className="h-4 w-4 text-warning" /><span className="font-bold tabular-nums">{stats?.streak ?? 0}</span><span className="text-xs text-muted-foreground">day streak</span>
@@ -194,19 +227,55 @@ function ProfileView() {
         </CardContent>
       </Card>
 
-      {/* Lifetime stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      {/* Progress hub stats */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile icon={Activity} label="Discipline" value={`${ins?.disciplineScore ?? 0}`} hint="this week" />
+        <StatTile icon={Flame} label="Best streak" value={`${stats?.bestStreak ?? 0}d`} hint={`current ${stats?.streak ?? 0}d`} />
+        <StatTile icon={Brain} label="Total focus" value={formatMinutes(stats?.focusMin ?? 0)} hint={`${stats?.focusCount ?? 0} sessions`} />
         <StatTile icon={BookOpen} label="Total study" value={formatMinutes(stats?.studyMin ?? 0)} />
         <StatTile icon={Dumbbell} label="Workouts" value={`${stats?.workoutCount ?? 0}`} hint={formatMinutes(stats?.workoutMin ?? 0)} />
         <StatTile icon={Target} label="Goals done" value={`${stats?.goalsDone ?? 0}/${stats?.goalsTotal ?? 0}`} />
-        <StatTile icon={Trophy} label="Badges" value={`${earned}/${badges.length}`} />
+        <StatTile icon={Trophy} label="Achievements" value={`${earned}/${badges.length}`} hint={`${achievementPct}%`} />
+        <StatTile icon={Zap} label="Total XP" value={xp.toLocaleString()} hint={`Lv ${level.level}`} />
       </div>
 
-      {/* Badges */}
+      {/* Weekly review */}
+      {ins && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="h-4 w-4 text-primary" />Weekly review</CardTitle>
+              <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", trendClass(ins.disciplineDelta))}>
+                {(() => { const I = trendIcon(ins.disciplineDelta); return <I className="h-3 w-3" />; })()}
+                {ins.disciplineDelta > 0 ? "+" : ""}{ins.disciplineDelta} discipline
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="rounded-2xl bg-gradient-aurora p-4 font-display text-base font-semibold leading-snug text-primary-foreground shadow-glow">
+              {ins.insights[0] ?? "Quiet week — your next action sets the tone."}
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <ReviewTile icon={Brain} label="Focus time" current={formatMinutes(ins.thisWeek.studyMinutes)} delta={ins.thisWeek.studyMinutes - ins.lastWeek.studyMinutes} unit="m" />
+              <ReviewTile icon={Target} label="Study days" current={`${ins.thisWeek.studyDays}/7`} delta={ins.thisWeek.studyDays - ins.lastWeek.studyDays} />
+              <ReviewTile icon={Dumbbell} label="Workouts" current={String(ins.thisWeek.workoutCount)} delta={ins.thisWeek.workoutCount - ins.lastWeek.workoutCount} />
+              <ReviewTile icon={Activity} label="Habits" current={`${Math.round(ins.thisWeek.habitCompletionRate * 100)}%`} delta={Math.round((ins.thisWeek.habitCompletionRate - ins.lastWeek.habitCompletionRate) * 100)} unit="%" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Achievements */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Trophy className="h-4 w-4 text-primary" />Badges</CardTitle></CardHeader>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base"><Trophy className="h-4 w-4 text-primary" />Achievements</CardTitle>
+            <span className="text-xs text-muted-foreground">{earned}/{badges.length} unlocked · {achievementPct}%</span>
+          </div>
+          <Progress value={achievementPct} className="mt-2 h-1.5" />
+        </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {badges.map((b) => <BadgeTile key={b.id} badge={b} />)}
           </div>
         </CardContent>
@@ -272,13 +341,29 @@ function Avatar({ url, name, email, large }: { url?: string; name?: string; emai
 function StatTile({ icon: Icon, label, value, hint }: { icon: React.ElementType; label: string; value: string; hint?: string }) {
   return (
     <Card className="hover-lift">
-      <CardContent className="pt-6">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-primary"><Icon className="h-4 w-4" /></div>
-        <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className="mt-1 font-display text-xl font-bold">{value}</p>
-        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <CardContent className="pt-5">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-secondary text-primary"><Icon className="h-4 w-4" /></div>
+        <p className="mt-3 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="mt-0.5 font-display text-xl font-bold tabular-nums">{value}</p>
+        {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function ReviewTile({ icon: Icon, label, current, delta, unit = "" }: { icon: React.ElementType; label: string; current: string; delta: number; unit?: string }) {
+  const TrendI = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
+  const cls = delta > 0 ? "text-success" : delta < 0 ? "text-destructive" : "text-muted-foreground";
+  return (
+    <div className="rounded-2xl border bg-secondary/30 p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-3 w-3" />{label}
+      </div>
+      <p className="mt-1 font-display text-base font-bold tabular-nums">{current}</p>
+      <div className={cn("mt-0.5 flex items-center gap-1 text-[11px] font-medium", cls)}>
+        <TrendI className="h-3 w-3" />{delta > 0 ? "+" : ""}{delta}{unit}
+      </div>
+    </div>
   );
 }
 
@@ -288,15 +373,23 @@ function BadgeTile({ badge }: { badge: Badge }) {
     <div
       title={`${badge.name}: ${badge.description}`}
       className={cn(
-        "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-all",
-        badge.earned ? "bg-gradient-to-br from-secondary to-card shadow-card hover-lift" : "bg-card opacity-60 grayscale"
+        "relative flex flex-col items-center gap-1.5 overflow-hidden rounded-2xl border p-3 text-center transition-all",
+        badge.earned ? "bg-gradient-to-br from-secondary to-card shadow-card hover-lift" : "bg-card"
       )}
     >
-      <div className={cn("grid h-10 w-10 place-items-center rounded-full", badge.earned ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-muted-foreground")}>
+      <div className={cn("grid h-11 w-11 place-items-center rounded-full", badge.earned ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary text-muted-foreground")}>
         {badge.earned ? <Icon className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
       </div>
-      <p className="text-[11px] font-semibold leading-tight">{badge.name}</p>
+      <p className={cn("text-[11px] font-semibold leading-tight", !badge.earned && "text-muted-foreground")}>{badge.name}</p>
       <p className="text-[10px] leading-tight text-muted-foreground">{badge.description}</p>
+      {!badge.earned && typeof badge.progress === "number" && badge.progress > 0 && (
+        <div className="mt-1 w-full">
+          <div className="h-1 overflow-hidden rounded-full bg-secondary">
+            <div className="h-full rounded-full bg-primary/60 transition-all" style={{ width: `${badge.progress}%` }} />
+          </div>
+          <p className="mt-0.5 text-[9px] text-muted-foreground">{badge.progress}%</p>
+        </div>
+      )}
     </div>
   );
 }
