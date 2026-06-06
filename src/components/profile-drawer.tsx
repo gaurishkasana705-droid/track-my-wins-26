@@ -27,20 +27,26 @@ export function ProfileDrawer() {
     queryKey: ["profile-drawer", user!.id],
     queryFn: async () => {
       const since14 = isoDate(daysAgo(13));
-      const [s, w, g, t, e] = await Promise.all([
+      const [s, w, g, t, e, f] = await Promise.all([
         supabase.from("study_sessions").select("duration_minutes, session_date"),
         supabase.from("workouts").select("duration_minutes, workout_date"),
         supabase.from("goals").select("completed"),
         supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
         supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        supabase.from("focus_sessions").select("duration_minutes, session_date"),
       ]);
       const studyRows = s.data ?? [];
       const workoutRows = w.data ?? [];
-      const allDates = new Set<string>([...studyRows.map((r) => r.session_date), ...workoutRows.map((r) => r.workout_date)]);
+      const focusRows = f.data ?? [];
+      const allDates = new Set<string>([...studyRows.map((r) => r.session_date), ...workoutRows.map((r) => r.workout_date), ...focusRows.map((r) => r.session_date)]);
       let streak = 0;
       for (let i = 0; i < 365; i++) {
         if (allDates.has(isoDate(daysAgo(i)))) streak++;
         else if (i > 0) break;
+      }
+      let best = 0, run = 0;
+      for (let i = 364; i >= 0; i--) {
+        if (allDates.has(isoDate(daysAgo(i)))) { run++; best = Math.max(best, run); } else run = 0;
       }
       const insights = computeInsights(
         studyRows.map((r) => ({ session_date: r.session_date, duration_minutes: r.duration_minutes })),
@@ -52,7 +58,10 @@ export function ProfileDrawer() {
         workoutCount: workoutRows.length,
         goalsDone: (g.data ?? []).filter((x) => x.completed).length,
         habitsHit: (e.data ?? []).filter((x) => Number(x.value) > 0).length,
-        streak, insights,
+        focusMin: focusRows.reduce((a, b) => a + b.duration_minutes, 0),
+        focusCount: focusRows.length,
+        sessionsCount: studyRows.length,
+        streak, bestStreak: Math.max(best, streak), insights,
       };
     },
   });
@@ -61,12 +70,17 @@ export function ProfileDrawer() {
   const xp = computeXP({
     studyMin: data?.studyMin ?? 0, workoutCount: data?.workoutCount ?? 0,
     goalsDone: data?.goalsDone ?? 0, streak: data?.streak ?? 0, habitsHit: data?.habitsHit ?? 0,
+    focusMin: data?.focusMin ?? 0,
   });
   const level = computeLevel(xp);
   const badges = computeBadges({
     studyMin: data?.studyMin ?? 0, workoutCount: data?.workoutCount ?? 0,
     goalsDone: data?.goalsDone ?? 0, streak: data?.streak ?? 0,
-    sessionsCount: data?.studyMin ? Math.max(1, Math.floor((data.studyMin ?? 0) / 45)) : 0,
+    bestStreak: data?.bestStreak ?? 0,
+    sessionsCount: data?.sessionsCount ?? 0,
+    focusMin: data?.focusMin ?? 0,
+    focusCount: data?.focusCount ?? 0,
+    level: level.level,
   });
   const earned = badges.filter((b) => b.earned).length;
 
