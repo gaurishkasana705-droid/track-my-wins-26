@@ -86,12 +86,13 @@ function GoalsView() {
       </div>
 
       {goals.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Target className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">No goals yet. Create your first one to get started.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Target}
+          title="Your streak starts today"
+          description="Create your first goal and start building momentum. Every achievement begins with one action."
+          actionLabel="Create your first goal"
+          onAction={() => setOpen(true)}
+        />
       ) : (
         <>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">Swipe right to complete · left to remove · long-press to edit</p>
