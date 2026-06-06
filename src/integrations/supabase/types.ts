@@ -224,6 +224,8 @@ export type Database = {
           font_family: string
           font_scale: number
           id: string
+          onboarding_completed: boolean
+          onboarding_focus: Json
           progress_style: string
           theme: string
           updated_at: string
@@ -238,6 +240,8 @@ export type Database = {
           font_family?: string
           font_scale?: number
           id?: string
+          onboarding_completed?: boolean
+          onboarding_focus?: Json
           progress_style?: string
           theme?: string
           updated_at?: string
@@ -252,6 +256,8 @@ export type Database = {
           font_family?: string
           font_scale?: number
           id?: string
+          onboarding_completed?: boolean
+          onboarding_focus?: Json
           progress_style?: string
           theme?: string
           updated_at?: string

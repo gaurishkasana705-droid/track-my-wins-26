@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight, Brain, TrendingUp, ListChecks } from "lucide-react";
 import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -88,9 +88,17 @@ function defaultSize(key: string): WidgetSize {
 
 function DashboardView() {
   const { user } = useAuth();
-  const { prefs, setPrefs } = usePreferences();
+  const { prefs, setPrefs, loading: prefsLoading } = usePreferences();
   const uid = user!.id;
   const [editMode, setEditMode] = useState(false);
+  const navigate = useNavigate();
+
+  // First-time user: route to onboarding wizard.
+  useEffect(() => {
+    if (!prefsLoading && !prefs.onboarding_completed) {
+      navigate({ to: "/onboarding", replace: true });
+    }
+  }, [prefsLoading, prefs.onboarding_completed, navigate]);
 
   const { data } = useQuery({
     queryKey: ["dashboard", uid],
