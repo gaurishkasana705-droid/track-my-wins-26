@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { SwipeRow } from "@/components/swipe-row";
+import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
