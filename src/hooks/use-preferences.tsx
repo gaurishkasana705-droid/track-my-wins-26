@@ -7,6 +7,7 @@ export type FontFamily = "space-grotesk" | "inter" | "manrope" | "dm-sans";
 export type ThemeMode = "light" | "dark" | "system";
 export type WidgetShape = "rounded" | "rectangle" | "square" | "circle";
 export type WidgetSize = "sm" | "md" | "lg";
+export type FocusArea = "study" | "fitness" | "productivity" | "habits" | "sleep";
 
 export type Prefs = {
   theme: ThemeMode;
@@ -17,6 +18,8 @@ export type Prefs = {
   widget_visibility: Record<string, boolean>;
   widget_shapes: Record<string, WidgetShape>;
   widget_sizes: Record<string, WidgetSize>;
+  onboarding_completed: boolean;
+  onboarding_focus: FocusArea[];
 };
 
 export const DEFAULT_LAYOUT = ["welcome", "todayFocus", "focusTime", "todayInsight", "quickProgress", "stats", "chart", "upcomingGoals", "recentActivity", "streak", "goals", "discipline", "dailySummary"];
@@ -30,6 +33,8 @@ const DEFAULTS: Prefs = {
   widget_visibility: { welcome: true, todayFocus: true, focusTime: true, todayInsight: true, quickProgress: true, stats: true, chart: true, upcomingGoals: true, recentActivity: true, goals: true, streak: true, discipline: true, dailySummary: true, customTrackers: true },
   widget_shapes: {},
   widget_sizes: {},
+  onboarding_completed: false,
+  onboarding_focus: [],
 };
 
 const FONT_MAP: Record<FontFamily, { sans: string; display: string }> = {
@@ -79,9 +84,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
         const layout = (data.dashboard_layout as string[]) ?? DEFAULTS.dashboard_layout;
-        // Merge in any newly-added default widgets the user hasn't seen yet
         const merged_layout = [...layout];
         for (const k of DEFAULT_LAYOUT) if (!merged_layout.includes(k)) merged_layout.push(k);
+        const row = data as typeof data & { onboarding_completed?: boolean; onboarding_focus?: FocusArea[] };
         const merged: Prefs = {
           theme: (data.theme as ThemeMode) ?? DEFAULTS.theme,
           font_family: (data.font_family as FontFamily) ?? DEFAULTS.font_family,
@@ -91,6 +96,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           widget_visibility: { ...DEFAULTS.widget_visibility, ...((data.widget_visibility as Record<string, boolean>) ?? {}) },
           widget_shapes: (data.widget_shapes as Record<string, WidgetShape>) ?? {},
           widget_sizes: (data.widget_sizes as Record<string, WidgetSize>) ?? {},
+          onboarding_completed: row.onboarding_completed ?? false,
+          onboarding_focus: (row.onboarding_focus as FocusArea[]) ?? [],
         };
         setLocal(merged);
         localStorage.setItem("prefs", JSON.stringify(merged));
