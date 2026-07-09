@@ -246,10 +246,7 @@ function DashboardView() {
   return (
     <div className="space-y-5 animate-fade-up">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your day</p>
-          <h2 className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h2>
-        </div>
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your day</p>
         <div className="flex items-center gap-2">
           {editMode && (
             <Button variant="ghost" size="sm" onClick={resetLayout}><RotateCcw className="mr-1.5 h-4 w-4" />Reset</Button>
