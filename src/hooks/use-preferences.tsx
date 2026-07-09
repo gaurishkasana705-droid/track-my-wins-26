@@ -77,6 +77,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { applyPrefs(prefs); }, [prefs]);
 
+  // Live-track OS theme when user picked "system"
+  useEffect(() => {
+    if (prefs.theme !== "system" || typeof window === "undefined") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyPrefs(prefs);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [prefs]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
