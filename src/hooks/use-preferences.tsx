@@ -25,7 +25,7 @@ export type Prefs = {
 export const DEFAULT_LAYOUT = ["welcome", "todayFocus", "focusTime", "todayInsight", "quickProgress", "stats", "chart", "upcomingGoals", "recentActivity", "streak", "goals", "discipline", "dailySummary"];
 
 const DEFAULTS: Prefs = {
-  theme: "system",
+  theme: "light",
   font_family: "space-grotesk",
   font_scale: 1,
   progress_style: "ring",
