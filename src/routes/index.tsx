@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
       { title: "LifeTrack — Your Premium Personal Dashboard" },
       { name: "description", content: "Track study, workouts, goals, and custom habits in one beautiful dashboard. Fully customizable, mobile-first, and built for daily focus." },
       { property: "og:title", content: "LifeTrack — Your Premium Personal Dashboard" },
-      { property: "og:description", content: "Track everything that matters. Customize everything you see." },
+      { property: "og:description", content: "Track study, workouts, goals, and custom habits in one beautiful dashboard. Fully customizable, mobile-first, and built for daily focus." },
     ],
   }),
   component: Landing,
