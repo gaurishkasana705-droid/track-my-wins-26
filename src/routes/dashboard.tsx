@@ -12,7 +12,7 @@ import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } fro
 import { db } from "@/lib/db";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
-import { CountUp } from "@/components/count-up";
+
 import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { computeInsights } from "@/lib/insights";
