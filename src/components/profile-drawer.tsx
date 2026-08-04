@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { initials } from "@/lib/avatar";
 import { isoDate, daysAgo, formatMinutes } from "@/lib/format";
 import { computeBadges, computeLevel, computeXP } from "@/lib/gamification";
@@ -18,7 +19,7 @@ export function ProfileDrawer() {
   const { data: profile } = useQuery({
     queryKey: ["profile-mini", user!.id],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user!.id).maybeSingle();
+      const { data } = await db.from("profiles").select("display_name, avatar_url").eq("user_id", user!.id).maybeSingle();
       return data;
     },
   });
@@ -28,12 +29,12 @@ export function ProfileDrawer() {
     queryFn: async () => {
       const since14 = isoDate(daysAgo(13));
       const [s, w, g, t, e, f] = await Promise.all([
-        supabase.from("study_sessions").select("duration_minutes, session_date"),
-        supabase.from("workouts").select("duration_minutes, workout_date"),
-        supabase.from("goals").select("completed"),
-        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
-        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
-        supabase.from("focus_sessions").select("duration_minutes, session_date"),
+        db.from("study_sessions").select("duration_minutes, session_date"),
+        db.from("workouts").select("duration_minutes, workout_date"),
+        db.from("goals").select("completed"),
+        db.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        db.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        db.from("focus_sessions").select("duration_minutes, session_date"),
       ]);
       const studyRows = s.data ?? [];
       const workoutRows = w.data ?? [];

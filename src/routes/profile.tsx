@@ -5,6 +5,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,9 +54,9 @@ function ProfileView() {
   const { data: profile, refetch } = useQuery({
     queryKey: ["profile", uid],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle();
+      const { data } = await db.from("profiles").select("*").eq("user_id", uid).maybeSingle();
       if (!data) {
-        await supabase.from("profiles").insert({ user_id: uid });
+        await db.from("profiles").insert({ user_id: uid });
         return null;
       }
       return data;
@@ -75,12 +76,12 @@ function ProfileView() {
     queryFn: async () => {
       const since14 = isoDate(daysAgo(13));
       const [s, w, g, entries, trackers, focus] = await Promise.all([
-        supabase.from("study_sessions").select("duration_minutes, session_date"),
-        supabase.from("workouts").select("duration_minutes, workout_date"),
-        supabase.from("goals").select("completed"),
-        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
-        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
-        supabase.from("focus_sessions").select("duration_minutes, session_date"),
+        db.from("study_sessions").select("duration_minutes, session_date"),
+        db.from("workouts").select("duration_minutes, workout_date"),
+        db.from("goals").select("completed"),
+        db.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        db.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        db.from("focus_sessions").select("duration_minutes, session_date"),
       ]);
       const studyRows = s.data ?? [];
       const workoutRows = w.data ?? [];
@@ -123,7 +124,7 @@ function ProfileView() {
 
   const save = async () => {
     setSaving(true);
-    const { error } = await supabase.from("profiles").upsert(
+    const { error } = await db.from("profiles").upsert(
       { user_id: uid, display_name: displayName || null, avatar_url: avatarUrl || null, bio: bio || null },
       { onConflict: "user_id" }
     );
@@ -135,11 +136,11 @@ function ProfileView() {
 
   const exportAll = async () => {
     const [s, w, g, t, e] = await Promise.all([
-      supabase.from("study_sessions").select("*"),
-      supabase.from("workouts").select("*"),
-      supabase.from("goals").select("*"),
-      supabase.from("custom_trackers").select("*"),
-      supabase.from("custom_tracker_entries").select("*"),
+      db.from("study_sessions").select("*"),
+      db.from("workouts").select("*"),
+      db.from("goals").select("*"),
+      db.from("custom_trackers").select("*"),
+      db.from("custom_tracker_entries").select("*"),
     ]);
     downloadJson(`lifetrack-export-${new Date().toISOString().slice(0, 10)}.json`, {
       profile, study: s.data, workouts: w.data, goals: g.data, custom_trackers: t.data, custom_tracker_entries: e.data,
@@ -149,14 +150,14 @@ function ProfileView() {
 
   const deleteAccount = async () => {
     await Promise.all([
-      supabase.from("study_sessions").delete().eq("user_id", uid),
-      supabase.from("workouts").delete().eq("user_id", uid),
-      supabase.from("goals").delete().eq("user_id", uid),
-      supabase.from("custom_tracker_entries").delete().eq("user_id", uid),
-      supabase.from("custom_trackers").delete().eq("user_id", uid),
-      supabase.from("focus_sessions").delete().eq("user_id", uid),
-      supabase.from("profiles").delete().eq("user_id", uid),
-      supabase.from("user_preferences").delete().eq("user_id", uid),
+      db.from("study_sessions").delete().eq("user_id", uid),
+      db.from("workouts").delete().eq("user_id", uid),
+      db.from("goals").delete().eq("user_id", uid),
+      db.from("custom_tracker_entries").delete().eq("user_id", uid),
+      db.from("custom_trackers").delete().eq("user_id", uid),
+      db.from("focus_sessions").delete().eq("user_id", uid),
+      db.from("profiles").delete().eq("user_id", uid),
+      db.from("user_preferences").delete().eq("user_id", uid),
     ]);
     await supabase.auth.signOut();
     toast.success("Account data deleted");

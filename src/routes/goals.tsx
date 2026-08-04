@@ -5,7 +5,7 @@ import { Plus, Trash2, Check, Target, CheckCircle2, Calendar } from "lucide-reac
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +38,7 @@ function GoalsView() {
   const { data: goals = [] } = useQuery({
     queryKey: ["goals", user!.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("goals").select("*").order("completed").order("created_at", { ascending: false });
+      const { data, error } = await db.from("goals").select("*").order("completed").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -48,20 +48,20 @@ function GoalsView() {
 
   const updateProgress = async (id: string, progress: number) => {
     const completed = progress >= 100;
-    const { error } = await supabase.from("goals").update({ progress, completed, updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await db.from("goals").update({ progress, completed, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
   };
 
   const toggleComplete = async (id: string, completed: boolean) => {
-    const { error } = await supabase.from("goals").update({ completed: !completed, progress: !completed ? 100 : 0, updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await db.from("goals").update({ completed: !completed, progress: !completed ? 100 : 0, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) return toast.error(error.message);
     toast.success(!completed ? "Goal completed! 🎉" : "Marked active");
     refresh();
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("goals").delete().eq("id", id);
+    const { error } = await db.from("goals").delete().eq("id", id);
     if (error) return toast.error(error.message);
     refresh();
   };
@@ -169,7 +169,7 @@ function AddGoalDialog({ open, onOpenChange, userId, onAdded }: { open: boolean;
     e.preventDefault();
     if (!title.trim()) return toast.error("Add a title.");
     setLoading(true);
-    const { error } = await supabase.from("goals").insert({
+    const { error } = await db.from("goals").insert({
       user_id: userId, title: title.trim(), description: description.trim() || null, deadline: deadline || null,
     });
     setLoading(false);

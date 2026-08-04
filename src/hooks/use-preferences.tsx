@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 
 export type ProgressStyle = "ring" | "bar" | "card";
@@ -90,7 +90,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
     (async () => {
-      const { data } = await supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
+      const { data } = await db.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
         const layout = (data.dashboard_layout as string[]) ?? DEFAULTS.dashboard_layout;
         const merged_layout = [...layout];
@@ -111,7 +111,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         setLocal(merged);
         localStorage.setItem("prefs", JSON.stringify(merged));
       } else {
-        await supabase.from("user_preferences").insert({ user_id: user.id });
+        await db.from("user_preferences").insert({ user_id: user.id });
       }
       setLoading(false);
     })();
@@ -130,7 +130,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setLocal(next);
     try { localStorage.setItem("prefs", JSON.stringify(next)); } catch {}
     if (user) {
-      await supabase.from("user_preferences").upsert(
+      await db.from("user_preferences").upsert(
         { user_id: user.id, ...next },
         { onConflict: "user_id" }
       );

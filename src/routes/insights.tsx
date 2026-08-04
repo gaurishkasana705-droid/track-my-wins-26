@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatRing } from "@/components/ui/stat-ring";
@@ -33,10 +33,10 @@ function InsightsView() {
     queryFn: async () => {
       const since = isoDate(daysAgo(13));
       const [study, workouts, trackers, entries] = await Promise.all([
-        supabase.from("study_sessions").select("session_date, duration_minutes").gte("session_date", since),
-        supabase.from("workouts").select("workout_date, duration_minutes").gte("workout_date", since),
-        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
-        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since),
+        db.from("study_sessions").select("session_date, duration_minutes").gte("session_date", since),
+        db.from("workouts").select("workout_date, duration_minutes").gte("workout_date", since),
+        db.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        db.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since),
       ]);
       return computeInsights(
         study.data ?? [],
