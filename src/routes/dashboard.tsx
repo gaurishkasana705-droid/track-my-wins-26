@@ -460,33 +460,6 @@ function RenderWidget(p: RenderProps) {
         </Link>
       );
     }
-    case "todayInsight": {
-      const headline = p.insights.insights[0] ?? "Log one activity today to start your streak.";
-      return (
-        <Link to="/insights" className="block h-full">
-          <div className="flex items-center justify-between">
-            <Header icon={Lightbulb} label="Today's insight" iconClass="text-warning" />
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <p className="mt-3 font-display text-lg font-semibold leading-snug">{headline}</p>
-          <p className="mt-2 text-xs text-muted-foreground">Tap to open the full reality check</p>
-        </Link>
-      );
-    }
-    case "stats":
-      if (compact) return (
-        <StatRing value={p.studyToday} max={STUDY_DAILY_TARGET} size={140} label={formatMinutes(p.studyToday)} sub="study today" />
-      );
-      return (
-        <div>
-          <Header icon={Sparkles} label="Today" />
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <MiniStat icon={BookOpen} value={formatMinutes(p.studyToday)} label="Study" />
-            <MiniStat icon={Dumbbell} value={`${p.weekWorkouts}`} label="Workouts wk" />
-            <MiniStat icon={Target} value={`${p.avgProgress}%`} label="Goal avg" />
-          </div>
-        </div>
-      );
     case "chart":
       if (compact) return (
         <StatRing value={p.weekStudy} max={STUDY_DAILY_TARGET * 7} size={140} label={`${Math.round(p.weekStudy / 60)}h`} sub="this week" />
