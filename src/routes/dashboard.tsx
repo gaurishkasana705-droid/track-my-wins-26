@@ -578,21 +578,6 @@ function RenderWidget(p: RenderProps) {
           <p className="mt-3 text-xs text-muted-foreground text-center">Tap to start a focus session</p>
         </Link>
       );
-    case "quickProgress":
-      if (compact) return (
-        <StatRing value={p.insights.consistencyScore} max={100} size={140} label={`${p.insights.consistencyScore}%`} sub="consistency" />
-      );
-      return (
-        <div>
-          <Header icon={TrendingUp} label="Quick progress" />
-          <div className="mt-4 space-y-3">
-            <ProgressRow label="Study (today)" value={p.studyToday} max={STUDY_DAILY_TARGET} display={formatMinutes(p.studyToday)} />
-            <ProgressRow label="Workouts (week)" value={p.weekWorkouts} max={WORKOUT_WEEKLY_TARGET} display={`${p.weekWorkouts}/${WORKOUT_WEEKLY_TARGET}`} />
-            <ProgressRow label="Focus (today)" value={p.todayFocus} max={120} display={formatMinutes(p.todayFocus)} />
-            <ProgressRow label="Goals avg" value={p.avgProgress} max={100} display={`${p.avgProgress}%`} />
-          </div>
-        </div>
-      );
     case "upcomingGoals": {
       const upcoming = [...p.goals.filter((g) => !g.completed && g.deadline)]
         .sort((a, b) => (a.deadline! < b.deadline! ? -1 : 1))
