@@ -551,7 +551,7 @@ function RenderWidget(p: RenderProps) {
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} accent />
+            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} />
             <FocusStat label="Week" value={formatMinutes(p.weekFocus)} />
             <FocusStat label="30d" value={formatMinutes(p.monthFocus)} />
           </div>
