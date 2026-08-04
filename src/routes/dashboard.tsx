@@ -34,22 +34,17 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const STUDY_DAILY_TARGET = 120;
-const WORKOUT_WEEKLY_TARGET = 5;
 
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
+  dailySummary: "Daily summary",
   todayFocus: "Today's focus",
   focusTime: "Focus time",
-  todayInsight: "Today's insight",
-  quickProgress: "Quick progress",
-  stats: "Summary stats",
   chart: "7-day chart",
-  upcomingGoals: "Upcoming goals",
-  recentActivity: "Recent activity",
-  streak: "Streak",
   goals: "Active goals",
-  discipline: "Discipline breakdown",
-  dailySummary: "Daily summary",
+  upcomingGoals: "Upcoming goals",
+  streak: "Streak",
+  recentActivity: "Recent activity",
 };
 
 const SHAPE_OPTIONS: { value: WidgetShape; label: string }[] = [
@@ -80,11 +75,10 @@ function defaultShape(_key: string): WidgetShape {
   return "rounded";
 }
 function defaultSize(key: string): WidgetSize {
-  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
-  if (key === "todayInsight" || key === "recentActivity" || key === "upcomingGoals" || key === "dailySummary") return "lg";
-  if (key === "focusTime" || key === "quickProgress") return "md";
-  return "md";
+  if (key === "focusTime") return "md";
+  return "lg";
 }
+
 
 function DashboardView() {
   const { user } = useAuth();
