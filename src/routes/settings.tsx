@@ -229,9 +229,9 @@ function SettingsView() {
                 widget_shapes: {},
                 widget_sizes: {},
                 dashboard_layout: [
-                  "welcome", "todayFocus", "focusTime", "todayInsight", "quickProgress",
-                  "stats", "chart", "upcomingGoals", "recentActivity", "streak",
-                  "goals", "discipline", "dailySummary",
+                  
+                  "welcome", "dailySummary", "todayFocus", "focusTime", "chart",
+                  "goals", "upcomingGoals", "streak", "recentActivity",
                 ],
               })
             }
