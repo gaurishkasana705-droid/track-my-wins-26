@@ -643,40 +643,27 @@ function RenderWidget(p: RenderProps) {
   }
 }
 
-function ProgressRow({ label, value, max, display }: { label: string; value: number; max: number; display: string }) {
-  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
+function FocusStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-muted-foreground">{display}</span>
-      </div>
-      <Progress value={pct} className="h-1.5" />
-    </div>
-  );
-}
-
-function FocusStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className={cn("rounded-xl p-3", accent ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary/40")}>
-      <p className="font-display text-lg font-bold tabular-nums leading-none">{value}</p>
-      <p className={cn("mt-1 text-[10px] uppercase tracking-wider", accent ? "opacity-80" : "text-muted-foreground")}>{label}</p>
+    <div className="rounded-xl bg-secondary/40 p-3">
+      <p className="font-display text-lg font-semibold tabular-nums leading-none">{value}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }
 
 function SummaryTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="rounded-xl border bg-secondary/30 p-3">
+    <div className="rounded-xl border p-3">
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" /> {label}
       </div>
-      <p className="mt-1 font-display text-base font-bold tabular-nums">{value}</p>
+      <p className="mt-1 font-display text-base font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
 
-function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React.ElementType; label: string; iconClass?: string }) {
+function Header({ icon: Icon, label, iconClass = "text-muted-foreground" }: { icon: React.ElementType; label: string; iconClass?: string }) {
   return (
     <div className="flex items-center gap-2 text-sm font-semibold">
       <Icon className={cn("h-4 w-4", iconClass)} /> {label}
@@ -686,23 +673,4 @@ function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between text-sm"><span className="text-muted-foreground">{label}</span><span className="font-medium tabular-nums">{value}</span></div>;
 }
-function MiniStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="rounded-xl border bg-secondary/40 p-3">
-      <div className="grid h-7 w-7 place-items-center rounded-lg bg-card text-primary"><Icon className="h-3.5 w-3.5" /></div>
-      <p className="mt-2 font-display text-lg font-bold">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-function BreakRow({ label, value, weight }: { label: string; value: number; weight: number }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-muted-foreground">{value}% · {weight}wt</span>
-      </div>
-      <Progress value={value} className="mt-1 h-1.5" />
-    </div>
-  );
-}
+
