@@ -74,7 +74,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: null }> {
   private mode: "select" | "insert" | "update" | "delete" | "upsert" = "select";
   private payload: Row[] = [];
   private onConflict: string[] = [];
-  private single = false;
+  private singleRow = false;
   private maybe = false;
 
   constructor(private table: string) {}
@@ -119,7 +119,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: null }> {
   limit(n: number) { this.limitN = n; return this; }
   maybeSingle() { this.maybe = true; return this as unknown as Query<any>; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  single(): any { this.single = true; return this; }
+  single(): any { this.singleRow = true; return this; }
 
   // --- execution ---------------------------------------------------------
   private run(): { data: any; error: null } {
@@ -147,7 +147,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: null }> {
       }
       store[this.table] = rows;
       write(store);
-      return { data: this.single || this.maybe ? created[0] ?? null : created, error: null };
+      return { data: this.singleRow || this.maybe ? created[0] ?? null : created, error: null };
     }
 
     if (this.mode === "update") {
@@ -159,7 +159,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: null }> {
         return next;
       });
       write(store);
-      return { data: this.single || this.maybe ? updated[0] ?? null : updated, error: null };
+      return { data: this.singleRow || this.maybe ? updated[0] ?? null : updated, error: null };
     }
 
     if (this.mode === "delete") {
@@ -178,7 +178,7 @@ class Query<T = any> implements PromiseLike<{ data: T; error: null }> {
       });
     }
     if (this.limitN != null) out = out.slice(0, this.limitN);
-    if (this.single || this.maybe) return { data: out[0] ?? null, error: null };
+    if (this.singleRow || this.maybe) return { data: out[0] ?? null, error: null };
     return { data: out, error: null };
   }
 
