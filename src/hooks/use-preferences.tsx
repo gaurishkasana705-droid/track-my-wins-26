@@ -22,7 +22,7 @@ export type Prefs = {
   onboarding_focus: FocusArea[];
 };
 
-export const DEFAULT_LAYOUT = ["welcome", "todayFocus", "focusTime", "todayInsight", "quickProgress", "stats", "chart", "upcomingGoals", "recentActivity", "streak", "goals", "discipline", "dailySummary"];
+export const DEFAULT_LAYOUT = ["welcome", "dailySummary", "todayFocus", "focusTime", "chart", "goals", "upcomingGoals", "streak", "recentActivity"];
 
 const DEFAULTS: Prefs = {
   theme: "light",
