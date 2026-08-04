@@ -22,7 +22,7 @@ export type Prefs = {
   onboarding_focus: FocusArea[];
 };
 
-export const DEFAULT_LAYOUT = ["welcome", "todayFocus", "focusTime", "todayInsight", "quickProgress", "stats", "chart", "upcomingGoals", "recentActivity", "streak", "goals", "discipline", "dailySummary"];
+export const DEFAULT_LAYOUT = ["welcome", "dailySummary", "todayFocus", "focusTime", "chart", "goals", "upcomingGoals", "streak", "recentActivity"];
 
 const DEFAULTS: Prefs = {
   theme: "light",
@@ -30,7 +30,7 @@ const DEFAULTS: Prefs = {
   font_scale: 1,
   progress_style: "ring",
   dashboard_layout: DEFAULT_LAYOUT,
-  widget_visibility: { welcome: true, todayFocus: true, focusTime: true, todayInsight: true, quickProgress: true, stats: true, chart: true, upcomingGoals: true, recentActivity: true, goals: true, streak: true, discipline: true, dailySummary: true, customTrackers: true },
+  widget_visibility: { welcome: true, dailySummary: true, todayFocus: true, focusTime: true, chart: true, goals: true, upcomingGoals: true, streak: true, recentActivity: true, customTrackers: true },
   widget_shapes: {},
   widget_sizes: {},
   onboarding_completed: false,

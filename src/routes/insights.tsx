@@ -53,7 +53,7 @@ function InsightsView() {
   const trendClass = data.disciplineDelta > 0 ? "text-success" : data.disciplineDelta < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="space-y-5">
       <div>
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Weekly check-in</p>
         <h2 className="mt-1 font-display text-2xl font-bold tracking-tight sm:text-3xl">How was your week?</h2>
@@ -113,7 +113,7 @@ function InsightsView() {
       </button>
 
       {expanded && (
-        <div className="space-y-4 animate-fade-up">
+        <div className="space-y-4">
           <Card>
             <CardContent className="flex flex-col items-center gap-3 pt-6">
               <StatRing value={data.disciplineScore} max={100} size={140} stroke={11} label={`${data.disciplineScore}`} sub="discipline" />

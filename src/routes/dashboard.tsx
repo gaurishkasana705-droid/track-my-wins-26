@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Sparkles, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, Lightbulb, ArrowRight, Brain, TrendingUp, ListChecks } from "lucide-react";
+import { BookOpen, Dumbbell, Target, Flame, CalendarDays, Activity, GripVertical, MoreVertical, RotateCcw, Pencil, Check, ArrowRight, Brain, ListChecks } from "lucide-react";
 import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from "@dnd-kit/core";
 import { arrayMove, SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -12,7 +12,7 @@ import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } fro
 import { db } from "@/lib/db";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
-import { CountUp } from "@/components/count-up";
+
 import { formatMinutes, isoDate, daysAgo } from "@/lib/format";
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid } from "recharts";
 import { computeInsights } from "@/lib/insights";
@@ -34,22 +34,17 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const STUDY_DAILY_TARGET = 120;
-const WORKOUT_WEEKLY_TARGET = 5;
 
 const WIDGET_LABELS: Record<string, string> = {
   welcome: "Welcome",
+  dailySummary: "Daily summary",
   todayFocus: "Today's focus",
   focusTime: "Focus time",
-  todayInsight: "Today's insight",
-  quickProgress: "Quick progress",
-  stats: "Summary stats",
   chart: "7-day chart",
-  upcomingGoals: "Upcoming goals",
-  recentActivity: "Recent activity",
-  streak: "Streak",
   goals: "Active goals",
-  discipline: "Discipline breakdown",
-  dailySummary: "Daily summary",
+  upcomingGoals: "Upcoming goals",
+  streak: "Streak",
+  recentActivity: "Recent activity",
 };
 
 const SHAPE_OPTIONS: { value: WidgetShape; label: string }[] = [
@@ -80,11 +75,10 @@ function defaultShape(_key: string): WidgetShape {
   return "rounded";
 }
 function defaultSize(key: string): WidgetSize {
-  if (key === "welcome" || key === "chart" || key === "goals" || key === "discipline" || key === "todayFocus") return "lg";
-  if (key === "todayInsight" || key === "recentActivity" || key === "upcomingGoals" || key === "dailySummary") return "lg";
-  if (key === "focusTime" || key === "quickProgress") return "md";
-  return "md";
+  if (key === "focusTime") return "md";
+  return "lg";
 }
+
 
 function DashboardView() {
   const { user } = useAuth();
@@ -238,13 +232,13 @@ function DashboardView() {
       dashboard_layout: DEFAULT_LAYOUT,
       widget_shapes: {},
       widget_sizes: {},
-      widget_visibility: { welcome: true, todayFocus: true, focusTime: true, todayInsight: true, quickProgress: true, stats: true, chart: true, upcomingGoals: true, recentActivity: true, goals: true, streak: true, discipline: true, dailySummary: true, customTrackers: true },
+      widget_visibility: { welcome: true, dailySummary: true, todayFocus: true, focusTime: true, chart: true, goals: true, upcomingGoals: true, streak: true, recentActivity: true, customTrackers: true },
     });
     toast.success("Layout reset to default");
   };
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your day</p>
         <div className="flex items-center gap-2">
@@ -460,33 +454,6 @@ function RenderWidget(p: RenderProps) {
         </Link>
       );
     }
-    case "todayInsight": {
-      const headline = p.insights.insights[0] ?? "Log one activity today to start your streak.";
-      return (
-        <Link to="/insights" className="block h-full">
-          <div className="flex items-center justify-between">
-            <Header icon={Lightbulb} label="Today's insight" iconClass="text-warning" />
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <p className="mt-3 font-display text-lg font-semibold leading-snug">{headline}</p>
-          <p className="mt-2 text-xs text-muted-foreground">Tap to open the full reality check</p>
-        </Link>
-      );
-    }
-    case "stats":
-      if (compact) return (
-        <StatRing value={p.studyToday} max={STUDY_DAILY_TARGET} size={140} label={formatMinutes(p.studyToday)} sub="study today" />
-      );
-      return (
-        <div>
-          <Header icon={Sparkles} label="Today" />
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <MiniStat icon={BookOpen} value={formatMinutes(p.studyToday)} label="Study" />
-            <MiniStat icon={Dumbbell} value={`${p.weekWorkouts}`} label="Workouts wk" />
-            <MiniStat icon={Target} value={`${p.avgProgress}%`} label="Goal avg" />
-          </div>
-        </div>
-      );
     case "chart":
       if (compact) return (
         <StatRing value={p.weekStudy} max={STUDY_DAILY_TARGET * 7} size={140} label={`${Math.round(p.weekStudy / 60)}h`} sub="this week" />
@@ -567,26 +534,6 @@ function RenderWidget(p: RenderProps) {
           </div>
         </div>
       );
-    case "discipline": {
-      const b = p.insights.breakdown;
-      if (compact) return (
-        <StatRing value={p.insights.disciplineScore} max={100} size={140} label={`${p.insights.disciplineScore}`} sub="discipline" />
-      );
-      return (
-        <div>
-          <Header icon={Activity} label="Discipline breakdown" />
-          <div className="mt-3 flex items-center gap-5">
-            <StatRing value={p.insights.disciplineScore} max={100} size={104} stroke={9} label={`${p.insights.disciplineScore}`} sub="score" />
-            <div className="flex-1 space-y-2">
-              <BreakRow label="Study consistency" value={b.study} weight={b.weights.study} />
-              <BreakRow label="Workout consistency" value={b.workout} weight={b.weights.workout} />
-              <BreakRow label="Habit completion" value={b.habit} weight={b.weights.habit} />
-              <BreakRow label="Volume vs target" value={b.volume} weight={b.weights.volume} />
-            </div>
-          </div>
-        </div>
-      );
-    }
     case "focusTime":
       if (compact) return (
         <StatRing value={p.todayFocus} max={120} size={140} label={formatMinutes(p.todayFocus)} sub="focus today" />
@@ -598,27 +545,12 @@ function RenderWidget(p: RenderProps) {
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} accent />
+            <FocusStat label="Today" value={formatMinutes(p.todayFocus)} />
             <FocusStat label="Week" value={formatMinutes(p.weekFocus)} />
             <FocusStat label="30d" value={formatMinutes(p.monthFocus)} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground text-center">Tap to start a focus session</p>
         </Link>
-      );
-    case "quickProgress":
-      if (compact) return (
-        <StatRing value={p.insights.consistencyScore} max={100} size={140} label={`${p.insights.consistencyScore}%`} sub="consistency" />
-      );
-      return (
-        <div>
-          <Header icon={TrendingUp} label="Quick progress" />
-          <div className="mt-4 space-y-3">
-            <ProgressRow label="Study (today)" value={p.studyToday} max={STUDY_DAILY_TARGET} display={formatMinutes(p.studyToday)} />
-            <ProgressRow label="Workouts (week)" value={p.weekWorkouts} max={WORKOUT_WEEKLY_TARGET} display={`${p.weekWorkouts}/${WORKOUT_WEEKLY_TARGET}`} />
-            <ProgressRow label="Focus (today)" value={p.todayFocus} max={120} display={formatMinutes(p.todayFocus)} />
-            <ProgressRow label="Goals avg" value={p.avgProgress} max={100} display={`${p.avgProgress}%`} />
-          </div>
-        </div>
       );
     case "upcomingGoals": {
       const upcoming = [...p.goals.filter((g) => !g.completed && g.deadline)]
@@ -705,40 +637,27 @@ function RenderWidget(p: RenderProps) {
   }
 }
 
-function ProgressRow({ label, value, max, display }: { label: string; value: number; max: number; display: string }) {
-  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
+function FocusStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-muted-foreground">{display}</span>
-      </div>
-      <Progress value={pct} className="h-1.5" />
-    </div>
-  );
-}
-
-function FocusStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className={cn("rounded-xl p-3", accent ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-secondary/40")}>
-      <p className="font-display text-lg font-bold tabular-nums leading-none">{value}</p>
-      <p className={cn("mt-1 text-[10px] uppercase tracking-wider", accent ? "opacity-80" : "text-muted-foreground")}>{label}</p>
+    <div className="rounded-xl bg-secondary/40 p-3">
+      <p className="font-display text-lg font-semibold tabular-nums leading-none">{value}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }
 
 function SummaryTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="rounded-xl border bg-secondary/30 p-3">
+    <div className="rounded-xl border p-3">
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
         <Icon className="h-3 w-3" /> {label}
       </div>
-      <p className="mt-1 font-display text-base font-bold tabular-nums">{value}</p>
+      <p className="mt-1 font-display text-base font-semibold tabular-nums">{value}</p>
     </div>
   );
 }
 
-function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React.ElementType; label: string; iconClass?: string }) {
+function Header({ icon: Icon, label, iconClass = "text-muted-foreground" }: { icon: React.ElementType; label: string; iconClass?: string }) {
   return (
     <div className="flex items-center gap-2 text-sm font-semibold">
       <Icon className={cn("h-4 w-4", iconClass)} /> {label}
@@ -748,23 +667,4 @@ function Header({ icon: Icon, label, iconClass = "text-primary" }: { icon: React
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between text-sm"><span className="text-muted-foreground">{label}</span><span className="font-medium tabular-nums">{value}</span></div>;
 }
-function MiniStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="rounded-xl border bg-secondary/40 p-3">
-      <div className="grid h-7 w-7 place-items-center rounded-lg bg-card text-primary"><Icon className="h-3.5 w-3.5" /></div>
-      <p className="mt-2 font-display text-lg font-bold">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-function BreakRow({ label, value, weight }: { label: string; value: number; weight: number }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="tabular-nums text-muted-foreground">{value}% · {weight}wt</span>
-      </div>
-      <Progress value={value} className="mt-1 h-1.5" />
-    </div>
-  );
-}
+
