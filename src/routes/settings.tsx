@@ -79,7 +79,7 @@ function SettingsView() {
   const enabledCount = ALL_WIDGET_KEYS.filter((k) => prefs.widget_visibility?.[k] !== false).length;
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-6">
       <div>
         <h2 className="font-display text-3xl font-bold tracking-tight">Customize</h2>
         <p className="mt-1 text-sm text-muted-foreground">Make LifeTrack look and feel like yours.</p>
@@ -100,7 +100,7 @@ function SettingsView() {
                 key={v}
                 onClick={() => setPrefs({ theme: v as ThemeMode })}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all hover-lift",
+                  "flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all",
                   prefs.theme === v ? "border-primary bg-secondary shadow-glow" : "border-border bg-card",
                 )}
               >
@@ -160,7 +160,7 @@ function SettingsView() {
                 key={v}
                 onClick={() => setPrefs({ progress_style: v as ProgressStyle })}
                 className={cn(
-                  "rounded-2xl border-2 p-4 text-sm font-medium transition-all hover-lift",
+                  "rounded-2xl border-2 p-4 text-sm font-medium transition-all",
                   prefs.progress_style === v ? "border-primary bg-secondary shadow-glow" : "border-border bg-card",
                 )}
               >
@@ -260,7 +260,7 @@ function WidgetCard({
       onClick={onToggle}
       aria-pressed={enabled}
       className={cn(
-        "group relative flex h-full flex-col items-start gap-3 overflow-hidden rounded-2xl border-2 bg-card p-3 text-left transition-all hover-lift",
+        "group relative flex h-full flex-col items-start gap-3 overflow-hidden rounded-2xl border-2 bg-card p-3 text-left transition-all",
         enabled
           ? "border-primary/70 shadow-glow"
           : "border-border opacity-70 hover:opacity-100",

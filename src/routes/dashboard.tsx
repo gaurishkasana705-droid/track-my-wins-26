@@ -238,7 +238,7 @@ function DashboardView() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Your day</p>
         <div className="flex items-center gap-2">
