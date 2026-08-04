@@ -540,26 +540,6 @@ function RenderWidget(p: RenderProps) {
           </div>
         </div>
       );
-    case "discipline": {
-      const b = p.insights.breakdown;
-      if (compact) return (
-        <StatRing value={p.insights.disciplineScore} max={100} size={140} label={`${p.insights.disciplineScore}`} sub="discipline" />
-      );
-      return (
-        <div>
-          <Header icon={Activity} label="Discipline breakdown" />
-          <div className="mt-3 flex items-center gap-5">
-            <StatRing value={p.insights.disciplineScore} max={100} size={104} stroke={9} label={`${p.insights.disciplineScore}`} sub="score" />
-            <div className="flex-1 space-y-2">
-              <BreakRow label="Study consistency" value={b.study} weight={b.weights.study} />
-              <BreakRow label="Workout consistency" value={b.workout} weight={b.weights.workout} />
-              <BreakRow label="Habit completion" value={b.habit} weight={b.weights.habit} />
-              <BreakRow label="Volume vs target" value={b.volume} weight={b.weights.volume} />
-            </div>
-          </div>
-        </div>
-      );
-    }
     case "focusTime":
       if (compact) return (
         <StatRing value={p.todayFocus} max={120} size={140} label={formatMinutes(p.todayFocus)} sub="focus today" />
