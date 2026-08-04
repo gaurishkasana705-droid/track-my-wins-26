@@ -37,7 +37,7 @@ function WorkoutsView() {
   const { data: workouts = [] } = useQuery({
     queryKey: ["workouts", user!.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("workouts")
         .select("*")
         .order("workout_date", { ascending: false })

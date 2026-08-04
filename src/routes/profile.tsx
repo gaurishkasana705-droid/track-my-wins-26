@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -159,7 +158,7 @@ function ProfileView() {
       db.from("profiles").delete().eq("user_id", uid),
       db.from("user_preferences").delete().eq("user_id", uid),
     ]);
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     toast.success("Account data deleted");
     navigate({ to: "/", replace: true });
   };

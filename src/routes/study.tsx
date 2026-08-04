@@ -34,7 +34,7 @@ function StudyView() {
   const { data: sessions = [] } = useQuery({
     queryKey: ["study", user!.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("study_sessions")
         .select("*")
         .order("session_date", { ascending: false })

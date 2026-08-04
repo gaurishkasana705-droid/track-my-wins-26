@@ -110,7 +110,7 @@ function FocusView() {
     queryKey: ["focus", uid],
     queryFn: async () => {
       const since = isoDate(daysAgo(29));
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("focus_sessions")
         .select("*")
         .gte("session_date", since)

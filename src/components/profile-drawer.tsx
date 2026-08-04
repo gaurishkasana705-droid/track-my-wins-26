@@ -5,7 +5,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { db } from "@/lib/db";
 import { initials } from "@/lib/avatar";
 import { isoDate, daysAgo, formatMinutes } from "@/lib/format";
@@ -86,7 +85,7 @@ export function ProfileDrawer() {
   const earned = badges.filter((b) => b.earned).length;
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     navigate({ to: "/", replace: true });
   };
 
