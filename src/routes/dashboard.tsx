@@ -232,7 +232,7 @@ function DashboardView() {
       dashboard_layout: DEFAULT_LAYOUT,
       widget_shapes: {},
       widget_sizes: {},
-      widget_visibility: { welcome: true, todayFocus: true, focusTime: true, todayInsight: true, quickProgress: true, stats: true, chart: true, upcomingGoals: true, recentActivity: true, goals: true, streak: true, discipline: true, dailySummary: true, customTrackers: true },
+      widget_visibility: { welcome: true, dailySummary: true, todayFocus: true, focusTime: true, chart: true, goals: true, upcomingGoals: true, streak: true, recentActivity: true, customTrackers: true },
     });
     toast.success("Layout reset to default");
   };
