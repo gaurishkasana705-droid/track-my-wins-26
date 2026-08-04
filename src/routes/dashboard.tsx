@@ -9,7 +9,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
 import { usePreferences, DEFAULT_LAYOUT, type WidgetShape, type WidgetSize } from "@/hooks/use-preferences";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Progress } from "@/components/ui/progress";
 import { StatRing } from "@/components/ui/stat-ring";
 import { CountUp } from "@/components/count-up";
@@ -109,12 +109,12 @@ function DashboardView() {
       const since7 = isoDate(daysAgo(6));
 
       const [study, workouts, goals, trackers, entries, focus] = await Promise.all([
-        supabase.from("study_sessions").select("duration_minutes, subject, session_date, created_at").gte("session_date", since30),
-        supabase.from("workouts").select("duration_minutes, workout_type, workout_date, created_at").gte("workout_date", since30),
-        supabase.from("goals").select("id, title, progress, completed, deadline, created_at").order("created_at", { ascending: false }),
-        supabase.from("custom_trackers").select("id, name, tracker_type, target_value"),
-        supabase.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
-        supabase.from("focus_sessions").select("duration_minutes, session_date, label, created_at").gte("session_date", since30),
+        db.from("study_sessions").select("duration_minutes, subject, session_date, created_at").gte("session_date", since30),
+        db.from("workouts").select("duration_minutes, workout_type, workout_date, created_at").gte("workout_date", since30),
+        db.from("goals").select("id, title, progress, completed, deadline, created_at").order("created_at", { ascending: false }),
+        db.from("custom_trackers").select("id, name, tracker_type, target_value"),
+        db.from("custom_tracker_entries").select("entry_date, tracker_id, value").gte("entry_date", since14),
+        db.from("focus_sessions").select("duration_minutes, session_date, label, created_at").gte("session_date", since30),
       ]);
 
       return {

@@ -5,7 +5,7 @@ import { Plus, Trash2, Dumbbell, Clock, Flame, Play, Pause, Square } from "lucid
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ function WorkoutsView() {
   const { data: workouts = [] } = useQuery({
     queryKey: ["workouts", user!.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("workouts")
         .select("*")
         .order("workout_date", { ascending: false })
@@ -60,7 +60,7 @@ function WorkoutsView() {
   const typeList = Object.entries(byType).sort((a, b) => b[1] - a[1]);
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("workouts").delete().eq("id", id);
+    const { error } = await db.from("workouts").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Workout deleted");
     refresh();
@@ -154,7 +154,7 @@ function AddWorkoutDialog({ open, onOpenChange, userId, onAdded }: { open: boole
     const mins = parseInt(duration, 10);
     if (!mins || mins <= 0) return toast.error("Enter a valid duration.");
     setLoading(true);
-    const { error } = await supabase.from("workouts").insert({
+    const { error } = await db.from("workouts").insert({
       user_id: userId, workout_type: type, duration_minutes: mins, workout_date: date, notes: notes.trim() || null,
     });
     setLoading(false);
@@ -228,7 +228,7 @@ function WorkoutStopwatch({ userId, onLogged }: { userId: string; onLogged: () =
   const stop = async () => {
     setRunning(false);
     const minutes = Math.max(1, Math.round(elapsed / 60));
-    const { error } = await supabase.from("workouts").insert({
+    const { error } = await db.from("workouts").insert({
       user_id: userId, workout_type: type, duration_minutes: minutes,
       workout_date: isoDate(new Date()), notes: notes.trim() || null,
     });

@@ -5,7 +5,7 @@ import { Play, Pause, RotateCcw, Coffee, Brain, Plus, Minus, Trash2 } from "luci
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ function FocusView() {
 
   const logSession = async (minutes: number) => {
     if (minutes < 1 || mode !== "focus") return;
-    const { error } = await supabase.from("focus_sessions").insert({
+    const { error } = await db.from("focus_sessions").insert({
       user_id: uid,
       duration_minutes: minutes,
       session_date: isoDate(new Date()),
@@ -110,7 +110,7 @@ function FocusView() {
     queryKey: ["focus", uid],
     queryFn: async () => {
       const since = isoDate(daysAgo(29));
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("focus_sessions")
         .select("*")
         .gte("session_date", since)
@@ -127,7 +127,7 @@ function FocusView() {
   const monthMin = sessions.reduce((a, b) => a + b.duration_minutes, 0);
 
   const removeSession = async (id: string) => {
-    const { error } = await supabase.from("focus_sessions").delete().eq("id", id);
+    const { error } = await db.from("focus_sessions").delete().eq("id", id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["focus"] });
   };

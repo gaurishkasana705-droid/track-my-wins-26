@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,7 @@ function TrackersView() {
   const { data: trackers = [] } = useQuery({
     queryKey: ["trackers", user!.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("custom_trackers").select("*").order("created_at", { ascending: false });
+      const { data, error } = await db.from("custom_trackers").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -104,7 +104,7 @@ function NewTrackerDialog({ open, onOpenChange, userId, onCreated }: { open: boo
     e.preventDefault();
     if (!name.trim()) return toast.error("Add a name.");
     setSaving(true);
-    const { error } = await supabase.from("custom_trackers").insert({
+    const { error } = await db.from("custom_trackers").insert({
       user_id: userId, name: name.trim(), icon, tracker_type: type,
       unit: unit.trim() || null, target_value: target ? Number(target) : null,
     });

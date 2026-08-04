@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
 import { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import { ProfileDrawer } from "@/components/profile-drawer";
 
@@ -34,7 +34,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     navigate({ to: "/", replace: true });
   };
 

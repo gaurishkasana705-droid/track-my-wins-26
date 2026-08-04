@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ function TrackerDetail() {
   const { data: tracker } = useQuery({
     queryKey: ["tracker", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("custom_trackers").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await db.from("custom_trackers").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -49,7 +49,7 @@ function TrackerDetail() {
   const { data: entries = [] } = useQuery({
     queryKey: ["tracker-entries", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("custom_tracker_entries").select("*").eq("tracker_id", id)
+      const { data, error } = await db.from("custom_tracker_entries").select("*").eq("tracker_id", id)
         .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -68,7 +68,7 @@ function TrackerDetail() {
     e.preventDefault();
     const v = parseFloat(value);
     if (isNaN(v)) return toast.error("Enter a number");
-    const { error } = await supabase.from("custom_tracker_entries").insert({
+    const { error } = await db.from("custom_tracker_entries").insert({
       tracker_id: id, user_id: user!.id, value: v, entry_date: today,
     });
     if (error) return toast.error(error.message);
@@ -78,20 +78,20 @@ function TrackerDetail() {
   };
 
   const removeEntry = async (entryId: string) => {
-    const { error } = await supabase.from("custom_tracker_entries").delete().eq("id", entryId);
+    const { error } = await db.from("custom_tracker_entries").delete().eq("id", entryId);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["tracker-entries", id] });
   };
 
   const resetAll = async () => {
-    const { error } = await supabase.from("custom_tracker_entries").delete().eq("tracker_id", id);
+    const { error } = await db.from("custom_tracker_entries").delete().eq("tracker_id", id);
     if (error) return toast.error(error.message);
     toast.success("Tracker reset");
     qc.invalidateQueries({ queryKey: ["tracker-entries", id] });
   };
 
   const deleteTracker = async () => {
-    const { error } = await supabase.from("custom_trackers").delete().eq("id", id);
+    const { error } = await db.from("custom_trackers").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Tracker deleted");
     navigate({ to: "/trackers" });

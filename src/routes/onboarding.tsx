@@ -5,7 +5,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { usePreferences, type FocusArea } from "@/hooks/use-preferences";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -60,7 +60,7 @@ function OnboardingView() {
     await setPrefs({ onboarding_completed: true, onboarding_focus: focus });
     if (!skip && focus.length && user) {
       const goals = focus.flatMap((f) => STARTER_GOALS[f].map((g) => ({ ...g, user_id: user.id })));
-      if (goals.length) await supabase.from("goals").insert(goals);
+      if (goals.length) await db.from("goals").insert(goals);
     }
     setSaving(false);
     toast.success(skip ? "You're all set." : "Starter goals added. Let's go!");
