@@ -41,38 +41,35 @@ const WIDGET_GROUPS: WidgetGroup[] = [
   {
     title: "Overview",
     items: [
-      { key: "welcome", label: "Welcome hero", desc: "Greeting, streak & discipline", icon: Sparkles, accent: "from-violet-500 to-fuchsia-500" },
-      { key: "todayFocus", label: "Today's focus", desc: "What matters right now", icon: Brain, accent: "from-sky-500 to-indigo-500" },
-      { key: "todayInsight", label: "Today's insight", desc: "Smart tip of the day", icon: Lightbulb, accent: "from-amber-400 to-orange-500" },
-      { key: "dailySummary", label: "Daily summary", desc: "One-line recap of today", icon: CalendarDays, accent: "from-emerald-500 to-teal-500" },
-      { key: "quickProgress", label: "Quick progress", desc: "At-a-glance rings", icon: PieChart, accent: "from-pink-500 to-rose-500" },
+      { key: "welcome", label: "Welcome", desc: "Greeting, streak & consistency", icon: Sparkles, accent: "from-slate-400 to-slate-500" },
+      { key: "dailySummary", label: "Daily summary", desc: "Today at a glance", icon: CalendarDays, accent: "from-slate-400 to-slate-500" },
+      { key: "todayFocus", label: "Today's focus", desc: "What matters right now", icon: Brain, accent: "from-slate-400 to-slate-500" },
     ],
   },
   {
     title: "Progress",
     items: [
-      { key: "stats", label: "Summary stats", desc: "Study, workouts, goals", icon: BarChart3, accent: "from-blue-500 to-cyan-500" },
-      { key: "chart", label: "7-day chart", desc: "Hours over the last week", icon: TrendingUp, accent: "from-teal-500 to-emerald-500" },
-      { key: "streak", label: "Streak", desc: "Consecutive active days", icon: Flame, accent: "from-orange-500 to-red-500" },
-      { key: "discipline", label: "Discipline", desc: "Consistency breakdown", icon: Activity, accent: "from-purple-500 to-indigo-500" },
+      { key: "chart", label: "7-day chart", desc: "Hours over the last week", icon: TrendingUp, accent: "from-slate-400 to-slate-500" },
+      { key: "streak", label: "Streak", desc: "Consecutive active days", icon: Flame, accent: "from-slate-400 to-slate-500" },
     ],
   },
   {
     title: "Planning",
     items: [
-      { key: "goals", label: "Active goals", desc: "Live goal progress", icon: Target, accent: "from-fuchsia-500 to-pink-500" },
-      { key: "upcomingGoals", label: "Upcoming goals", desc: "Next deadlines", icon: CalendarDays, accent: "from-indigo-500 to-blue-500" },
+      { key: "goals", label: "Active goals", desc: "Live goal progress", icon: Target, accent: "from-slate-400 to-slate-500" },
+      { key: "upcomingGoals", label: "Upcoming goals", desc: "Next deadlines", icon: CalendarDays, accent: "from-slate-400 to-slate-500" },
     ],
   },
   {
     title: "Activity",
     items: [
-      { key: "focusTime", label: "Focus time", desc: "Deep work minutes", icon: Zap, accent: "from-yellow-400 to-amber-500" },
-      { key: "recentActivity", label: "Recent activity", desc: "Latest logged events", icon: Activity, accent: "from-cyan-500 to-sky-500" },
-      { key: "customTrackers", label: "Custom trackers", desc: "Your habits & metrics", icon: ListChecks, accent: "from-emerald-500 to-lime-500" },
+      { key: "focusTime", label: "Focus time", desc: "Deep work minutes", icon: Zap, accent: "from-slate-400 to-slate-500" },
+      { key: "recentActivity", label: "Recent activity", desc: "Latest logged events", icon: Activity, accent: "from-slate-400 to-slate-500" },
+      { key: "customTrackers", label: "Custom trackers", desc: "Your habits & metrics", icon: ListChecks, accent: "from-slate-400 to-slate-500" },
     ],
   },
 ];
+
 
 const ALL_WIDGET_KEYS = WIDGET_GROUPS.flatMap((g) => g.items.map((i) => i.key));
 
