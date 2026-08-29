@@ -142,7 +142,6 @@ function ProfileView() {
       db.from("profiles").delete().eq("user_id", uid),
       db.from("user_preferences").delete().eq("user_id", uid),
     ]);
-    await db.auth.signOut();
     toast.success("Account data deleted");
     navigate({ to: "/", replace: true });
   };

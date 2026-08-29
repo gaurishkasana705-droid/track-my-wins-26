@@ -52,11 +52,6 @@ export function ProfileDrawer() {
 
   const name = profile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "You";
 
-  const signOut = async () => {
-    await db.auth.signOut();
-    navigate({ to: "/", replace: true });
-  };
-
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -104,9 +99,6 @@ export function ProfileDrawer() {
         <div className="mt-4 space-y-1">
           <DrawerLink to="/profile" icon={User} label="Profile" />
           <DrawerLink to="/settings" icon={Settings} label="Settings" />
-          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
         </div>
       </SheetContent>
     </Sheet>

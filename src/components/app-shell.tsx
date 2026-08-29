@@ -33,11 +33,6 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
-  const signOut = async () => {
-    await db.auth.signOut();
-    navigate({ to: "/", replace: true });
-  };
-
   return (
     <div className="flex min-h-screen w-full bg-gradient-subtle">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r bg-sidebar md:flex md:flex-col">
@@ -51,9 +46,6 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             <h1 className="font-display text-lg font-semibold tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out" className="hidden sm:inline-flex">
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 sm:px-6 sm:pb-8 sm:pt-8">{children}</main>
