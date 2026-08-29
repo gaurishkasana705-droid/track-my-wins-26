@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Flame, Settings, LogOut, User } from "lucide-react";
+import { Flame, Settings, User } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/db";
@@ -9,7 +9,6 @@ import { isoDate, daysAgo, formatMinutes } from "@/lib/format";
 
 export function ProfileDrawer() {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ["profile-mini", user!.id],

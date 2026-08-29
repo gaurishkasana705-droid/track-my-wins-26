@@ -1,5 +1,5 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { LayoutDashboard, BookOpen, Dumbbell, Target, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
 import { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
@@ -30,7 +30,6 @@ const SECONDARY_NAV = [
 ] as const;
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
-  const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   return (
