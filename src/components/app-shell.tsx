@@ -1,5 +1,5 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, BookOpen, Dumbbell, Target, LogOut, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { LayoutDashboard, BookOpen, Dumbbell, Target, Sparkles, Settings, User, ListChecks, Activity, Brain } from "lucide-react";
 import { type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
@@ -30,13 +30,7 @@ const SECONDARY_NAV = [
 ] as const;
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
-  const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
-
-  const signOut = async () => {
-    await db.auth.signOut();
-    navigate({ to: "/", replace: true });
-  };
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-subtle">
@@ -51,9 +45,6 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             <h1 className="font-display text-lg font-semibold tracking-tight">{title}</h1>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out" className="hidden sm:inline-flex">
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 sm:px-6 sm:pb-8 sm:pt-8">{children}</main>

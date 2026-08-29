@@ -12,11 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutsRouteImport } from './routes/workouts'
 import { Route as TrackersRouteImport } from './routes/trackers'
 import { Route as StudyRouteImport } from './routes/study'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as FocusRouteImport } from './routes/focus'
@@ -39,11 +37,6 @@ const StudyRoute = StudyRouteImport.update({
   path: '/study',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -57,11 +50,6 @@ const ProfileRoute = ProfileRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InsightsRoute = InsightsRouteImport.update({
@@ -101,11 +89,9 @@ export interface FileRoutesByFullPath {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/insights': typeof InsightsRoute
-  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
-  '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
@@ -117,11 +103,9 @@ export interface FileRoutesByTo {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/insights': typeof InsightsRoute
-  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
-  '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
@@ -134,11 +118,9 @@ export interface FileRoutesById {
   '/focus': typeof FocusRoute
   '/goals': typeof GoalsRoute
   '/insights': typeof InsightsRoute
-  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
-  '/signup': typeof SignupRoute
   '/study': typeof StudyRoute
   '/trackers': typeof TrackersRouteWithChildren
   '/workouts': typeof WorkoutsRoute
@@ -152,11 +134,9 @@ export interface FileRouteTypes {
     | '/focus'
     | '/goals'
     | '/insights'
-    | '/login'
     | '/onboarding'
     | '/profile'
     | '/settings'
-    | '/signup'
     | '/study'
     | '/trackers'
     | '/workouts'
@@ -168,11 +148,9 @@ export interface FileRouteTypes {
     | '/focus'
     | '/goals'
     | '/insights'
-    | '/login'
     | '/onboarding'
     | '/profile'
     | '/settings'
-    | '/signup'
     | '/study'
     | '/trackers'
     | '/workouts'
@@ -184,11 +162,9 @@ export interface FileRouteTypes {
     | '/focus'
     | '/goals'
     | '/insights'
-    | '/login'
     | '/onboarding'
     | '/profile'
     | '/settings'
-    | '/signup'
     | '/study'
     | '/trackers'
     | '/workouts'
@@ -201,11 +177,9 @@ export interface RootRouteChildren {
   FocusRoute: typeof FocusRoute
   GoalsRoute: typeof GoalsRoute
   InsightsRoute: typeof InsightsRoute
-  LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
-  SignupRoute: typeof SignupRoute
   StudyRoute: typeof StudyRoute
   TrackersRoute: typeof TrackersRouteWithChildren
   WorkoutsRoute: typeof WorkoutsRoute
@@ -234,13 +208,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -260,13 +227,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/insights': {
@@ -332,11 +292,9 @@ const rootRouteChildren: RootRouteChildren = {
   FocusRoute: FocusRoute,
   GoalsRoute: GoalsRoute,
   InsightsRoute: InsightsRoute,
-  LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
-  SignupRoute: SignupRoute,
   StudyRoute: StudyRoute,
   TrackersRoute: TrackersRouteWithChildren,
   WorkoutsRoute: WorkoutsRoute,
@@ -344,3 +302,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

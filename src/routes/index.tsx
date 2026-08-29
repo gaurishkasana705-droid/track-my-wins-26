@@ -37,8 +37,7 @@ function Landing() {
             LifeTrack
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link to="/login">Sign in</Link></Button>
-            <Button asChild className="shadow-elegant"><Link to="/signup">Get started</Link></Button>
+            <Button asChild className="shadow-elegant"><Link to="/dashboard">Open dashboard</Link></Button>
           </div>
         </div>
       </header>
@@ -60,12 +59,9 @@ function Landing() {
         </p>
         <div className="animate-fade-up mt-10 flex flex-wrap items-center justify-center gap-3" style={{ animationDelay: "0.3s" }}>
           <Button asChild size="lg" className="h-12 px-6 text-base shadow-elegant">
-            <Link to="/signup">
-              Start tracking free <ArrowRight className="ml-1.5 h-4 w-4" />
+            <Link to="/dashboard">
+              Start tracking <ArrowRight className="ml-1.5 h-4 w-4" />
             </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="h-12 px-6 text-base">
-            <Link to="/login">I have an account</Link>
           </Button>
         </div>
 
@@ -184,7 +180,7 @@ function Landing() {
             <h2 className="font-display text-3xl font-bold sm:text-4xl">Ready to track your best year?</h2>
             <p className="mt-3 text-primary-foreground/85">Free forever. No credit card. Set up in under a minute.</p>
             <Button asChild size="lg" variant="secondary" className="mt-6 h-12 px-6 text-base shadow-card">
-              <Link to="/signup">Create your free account <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+              <Link to="/dashboard">Open your dashboard <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Flame, Settings, LogOut, User } from "lucide-react";
+import { Flame, Settings, User } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/db";
@@ -9,7 +9,6 @@ import { isoDate, daysAgo, formatMinutes } from "@/lib/format";
 
 export function ProfileDrawer() {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ["profile-mini", user!.id],
@@ -51,11 +50,6 @@ export function ProfileDrawer() {
   });
 
   const name = profile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "You";
-
-  const signOut = async () => {
-    await db.auth.signOut();
-    navigate({ to: "/", replace: true });
-  };
 
   return (
     <Sheet>
@@ -104,9 +98,6 @@ export function ProfileDrawer() {
         <div className="mt-4 space-y-1">
           <DrawerLink to="/profile" icon={User} label="Profile" />
           <DrawerLink to="/settings" icon={Settings} label="Settings" />
-          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
         </div>
       </SheetContent>
     </Sheet>
